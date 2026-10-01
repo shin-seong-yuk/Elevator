@@ -40,6 +40,7 @@ namespace ElevatorGame
         public Transform leftBoot,rightBoot;
         public bool InputEnabled=true;
         public const float DriveSeconds=2.5f, InputPauseSeconds=.2f;
+        public const float WeaponDisarmSpeed=9f;
         public bool CanDrive => RoundManager.Instance && ((RoundManager.Instance.Clock + Slot.Value*.19) % (DriveSeconds+InputPauseSeconds)) < DriveSeconds;
         void Awake()
         {
@@ -134,8 +135,13 @@ namespace ElevatorGame
                 // Keep the body upright during the brief input pause while preserving physical pulls.
                 float spring=hanging?22:CanDrive?58:82;float damping=hanging?3.5f:CanDrive?7.5f:11;
                 var wobble=Quaternion.Euler(Mathf.Sin(Time.time*7+Slot.Value)*movement.magnitude*5,0,-movement.x*6)*Vector3.up;
-                Body.AddTorque(Vector3.Cross(transform.up,wobble)*spring-Body.angularVelocity*damping,ForceMode.Acceleration);
-                Body.AddTorque(Vector3.up*Mathf.Clamp(Mathf.DeltaAngle(transform.eulerAngles.y,aimYaw)*.1f,-7,7),ForceMode.Acceleration);
+                // Upright correction must leave yaw free for the view-following turn motor.
+                Vector3 tiltVelocity=Body.angularVelocity-Vector3.Project(Body.angularVelocity,Vector3.up);
+                Body.AddTorque(Vector3.Cross(transform.up,wobble)*spring-tiltVelocity*damping,ForceMode.Acceleration);
+                float yawError=Mathf.DeltaAngle(Body.rotation.eulerAngles.y,aimYaw)*Mathf.Deg2Rad;
+                float desiredYawSpeed=Mathf.Clamp(yawError*5f,-4.5f,4.5f);
+                float yawAcceleration=Mathf.Clamp((desiredYawSpeed-Body.angularVelocity.y)*10f,-32f,32f);
+                Body.AddTorque(Vector3.up*yawAcceleration*(hanging?.45f:1f),ForceMode.Acceleration);
             }
             Body.linearVelocity=Vector3.ClampMagnitude(Body.linearVelocity,24);
             if(grounded&&horizontal.magnitude>1&&Time.time>stepAt){stepAt=Time.time+.34f;PlaySound("step",.25f);}
@@ -163,6 +169,7 @@ namespace ElevatorGame
         {
             if(!IsAuthority||!Alive.Value)return;
             Grab.ApplyImpact(velocity.magnitude*Body.mass);
+            if(velocity.magnitude>=WeaponDisarmSpeed)WeaponSystem.Disarm(this,velocity);
             if(Time.time>=nextHitFeedback&&velocity.magnitude>2&&RoundManager.Instance){nextHitFeedback=Time.time+.12f;RoundManager.Instance.WeaponEffect(Body.position+Vector3.up*.25f,velocity,100+Slot.Value);}
             Body.AddForce(velocity,ForceMode.VelocityChange);stunnedUntil=Time.time+stun;
             Body.AddTorque(UnityEngine.Random.insideUnitSphere*2,ForceMode.VelocityChange);
@@ -175,7 +182,12 @@ namespace ElevatorGame
         [ClientRpc] void SoundClientRpc(string cue,float volume)=>AudioManager.Instance?.PlayAt(cue,transform.position,volume);
         void OnCollisionEnter(Collision c)
         {
-            if(IsAuthority)Grab.ApplyImpact(c.impulse.magnitude);
+            if(IsAuthority)
+            {
+                Grab.ApplyImpact(c.impulse.magnitude);
+                if(c.relativeVelocity.magnitude>=WeaponDisarmSpeed&&c.impulse.magnitude>=Body.mass*WeaponDisarmSpeed)
+                    WeaponSystem.Disarm(this,Body.linearVelocity);
+            }
             if(IsAuthority&&c.relativeVelocity.magnitude>5){stunnedUntil=Time.time+1.25f;PlaySound("fall",.6f);}
             else if(c.relativeVelocity.magnitude>2.5f)AudioManager.Instance?.PlayAt("bump",transform.position,.3f);
         }

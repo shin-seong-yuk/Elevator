@@ -47,6 +47,18 @@ namespace ElevatorGame
             foreach(var c in w.GetComponents<Collider>())c.enabled=true;
             if(thrown)p.PlaySound("throw");
         }
+        public static void Disarm(PlayerController p,Vector3 impactVelocity)
+        {
+            if(!p.IsAuthority)return;
+            var w=Held(p);if(!w)return;
+            w.Holder.Value=-1;
+            w.Prop.Body.isKinematic=false;
+            w.Prop.Body.position=p.Grab.WeaponHandPosition+impactVelocity.normalized*.25f;
+            w.Prop.Body.linearVelocity=p.Body.linearVelocity+impactVelocity*.4f+Vector3.up*1.5f;
+            w.Prop.Body.angularVelocity=Vector3.Cross(Vector3.up,impactVelocity.normalized)*9f+p.transform.right*3f;
+            foreach(var c in w.GetComponents<Collider>())c.enabled=true;
+            p.PlaySound("drop");
+        }
         public static void Use(PlayerController p)
         {
             if(!Instance||!p.IsAuthority||!p.Alive.Value)return;var w=Held(p);if(!w)return;
