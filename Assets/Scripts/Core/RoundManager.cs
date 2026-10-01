@@ -47,6 +47,17 @@ namespace ElevatorGame
         public TextMesh floorDisplay;
         readonly NetworkVariable<ulong> netBroken=new(0); SessionValue<ulong> broken;
         public SessionValue<ulong> BrokenPanels=>broken??=new(netBroken,0);
+        readonly NetworkVariable<double> netDropAt=new(0),netDropEnds=new(0);
+        SessionValue<double> dropAt,dropEnds;
+        public SessionValue<double> DropAt=>dropAt??=new(netDropAt,0);
+        public SessionValue<double> DropEnds=>dropEnds??=new(netDropEnds,0);
+        public bool DropActive=>Phase.Value==RoundPhase.Playing&&Stage.Value==ElevatorStage.Moving&&DropAt.Value>0&&Clock>=DropAt.Value&&Clock<DropEnds.Value;
+        public float DropProgress=>DropActive?(float)((Clock-DropAt.Value)/(DropEnds.Value-DropAt.Value)):0;
+        public bool DropLaunched=>dropLaunched;
+        public bool DropLanded=>dropLanded;
+        bool dropLaunched,dropLanded;
+        public void RestoreDrop(double startsIn,double endsIn,bool launched,bool landed)
+        {DropAt.Value=startsIn==0?0:Clock+startsIn;DropEnds.Value=endsIn==0?0:Clock+endsIn;dropLaunched=launched;dropLanded=landed;}
         WeaponSystem weapons;
         float nextCheck;
         public float Remaining => IsActive ? Mathf.Max(0, (float)(StageEnds.Value - Clock)) : 0;
@@ -58,6 +69,7 @@ namespace ElevatorGame
         public void StartRound()
         {
             if (!IsAuthority || (Phase.Value == RoundPhase.Lobby && !CanStart) || (Phase.Value == RoundPhase.Results && Remaining > 0)) return;
+            DropAt.Value=DropEnds.Value=0;dropLaunched=dropLanded=false;
             weapons.ResetAll();BrokenPanels.Value=0;foreach(var panel in FindObjectsByType<CabinPanel>(FindObjectsSortMode.None))panel.ResetHealth();
             events.Cleanup(true); elimination.ResetState(); GameSession.Instance?.OnRoundStart();
             foreach (var p in Players()) p.ResetForRound(SpawnPoint(p.Slot.Value));
@@ -70,6 +82,7 @@ namespace ElevatorGame
         public void ReturnToLobby()
         {
             if (!IsAuthority || Phase.Value != RoundPhase.Results || Remaining > 0) return;
+            DropAt.Value=DropEnds.Value=0;dropLaunched=dropLanded=false;
             weapons.ResetAll();BrokenPanels.Value=0;foreach(var panel in FindObjectsByType<CabinPanel>(FindObjectsSortMode.None))panel.ResetHealth();events.Cleanup(true); Phase.Value = RoundPhase.Lobby; Floor.Value = 0;Stage.Value=ElevatorStage.Moving;StageEnds.Value=Clock;
             foreach (var p in Players()) { p.ResetForRound(SpawnPoint(p.Slot.Value)); p.Ready.Value = p.IsBot.Value; }
         }
@@ -79,6 +92,9 @@ namespace ElevatorGame
             events.Cleanup(false); Floor.Value++;weapons.OnFloor(Floor.Value);
             EventTitle.Value = new FixedString128Bytes("NEXT FLOOR...");
             SetStage(ElevatorStage.Moving, 12);
+            dropLaunched=dropLanded=false;
+            if(Floor.Value>=2&&events.Random(0,1)<.24f){DropAt.Value=Clock+3.6;DropEnds.Value=DropAt.Value+1.55;}
+            else DropAt.Value=DropEnds.Value=0;
         }
         void SetStage(ElevatorStage stage, float duration)
         {
@@ -130,6 +146,21 @@ namespace ElevatorGame
                 _ => 0
             };
             doors.SetAperture(Phase.Value == RoundPhase.Lobby ? 0 : aperture);
+            if(IsAuthority&&Phase.Value==RoundPhase.Playing&&Stage.Value==ElevatorStage.Moving&&DropAt.Value>0)
+            {
+                if(!dropLaunched&&Clock>=DropAt.Value)
+                {
+                    dropLaunched=true;PlayCue("drop");
+                    foreach(var p in Players())if(p.Alive.Value)p.Body.AddForce(Vector3.up*3,ForceMode.VelocityChange);
+                }
+                if(DropActive)
+                    foreach(var p in Players())if(p.Alive.Value)p.Body.AddForce(Vector3.up*4,ForceMode.Acceleration);
+                if(dropLaunched&&!dropLanded&&Clock>=DropEnds.Value)
+                {
+                    dropLanded=true;PlayCue("slam");
+                    foreach(var p in Players())if(p.Alive.Value)p.Body.AddForce(Vector3.down*3.6f,ForceMode.VelocityChange);
+                }
+            }
         }
         public void WeaponEffect(Vector3 start,Vector3 end,int kind){if(GameSession.Offline)WeaponSystem.ShowEffect(start,end,kind);else WeaponEffectClientRpc(start,end,kind);}
         [ClientRpc] void WeaponEffectClientRpc(Vector3 start,Vector3 end,int kind)=>WeaponSystem.ShowEffect(start,end,kind);

@@ -12,7 +12,7 @@ namespace ElevatorGame
             if(Elapsed>=next&&count<7)
             {
                 next+=1.1f;count++;
-                var cart=Spawn(1,new Vector3(Manager.Random(-1.9f,1.9f),.5f,18),new Vector3(Manager.Random(-1,1),0,-Mathf.Min(21,14*Power)),count%2==1);
+                var cart=Spawn(1,new Vector3(Manager.Random(-3.1f,3.1f),.5f,18),new Vector3(Manager.Random(-1.5f,1.5f),0,-Mathf.Min(21,14*Power)),count%2==1);
                 passes[cart]=0;RoundManager.Instance.PlayCue("cart");
             }
             foreach(var entry in new List<NetworkProp>(passes.Keys))

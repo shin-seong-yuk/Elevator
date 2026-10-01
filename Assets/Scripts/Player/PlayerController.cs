@@ -39,7 +39,8 @@ namespace ElevatorGame
         Renderer[] visuals;
         public Transform leftBoot,rightBoot;
         public bool InputEnabled=true;
-        public bool CanDrive => RoundManager.Instance && ((RoundManager.Instance.Clock + Slot.Value*.19) % 3.0) < 2.5;
+        public const float DriveSeconds=2.5f, InputPauseSeconds=.2f;
+        public bool CanDrive => RoundManager.Instance && ((RoundManager.Instance.Clock + Slot.Value*.19) % (DriveSeconds+InputPauseSeconds)) < DriveSeconds;
         void Awake()
         {
             Body=GetComponent<Rigidbody>();Grab=GetComponent<PlayerGrabController>();
@@ -72,14 +73,15 @@ namespace ElevatorGame
             var key=Keyboard.current;var mouse=Mouse.current;if(key==null)return;
             bool captured=Cursor.lockState==CursorLockMode.Locked && !(GameSession.Instance&&GameSession.Instance.ShowTutorial);
             if(captured&&key.rKey.wasPressedThisFrame&&RoundManager.Instance.Phase.Value==RoundPhase.Lobby)ToggleReady();
-            var axis=captured?new Vector2((key.dKey.isPressed?1:0)-(key.aKey.isPressed?1:0),(key.wKey.isPressed?1:0)-(key.sKey.isPressed?1:0)):Vector2.zero;
-            localJump|=captured&&key.spaceKey.wasPressedThisFrame;
-            if(captured&&(key.fKey.wasPressedThisFrame||(mouse!=null&&mouse.rightButton.isPressed)))
+            bool controls=captured&&CanDrive;
+            var axis=controls?new Vector2((key.dKey.isPressed?1:0)-(key.aKey.isPressed?1:0),(key.wKey.isPressed?1:0)-(key.sKey.isPressed?1:0)):Vector2.zero;
+            localJump|=controls&&key.spaceKey.wasPressedThisFrame;
+            if(controls&&(key.fKey.wasPressedThisFrame||(mouse!=null&&mouse.rightButton.isPressed)))
             {if(GameSession.Offline)WeaponAction(key.fKey.wasPressedThisFrame,mouse!=null&&mouse.rightButton.isPressed);else WeaponServerRpc(key.fKey.wasPressedThisFrame,mouse!=null&&mouse.rightButton.isPressed);}
             if(Time.unscaledTime>=nextInput)
             {
                 nextInput=Time.unscaledTime+1f/60;
-                bool held=captured&&mouse!=null&&mouse.leftButton.isPressed;
+                bool held=controls&&mouse!=null&&mouse.leftButton.isPressed;
                 float yaw=CameraRig.Instance?CameraRig.Instance.Yaw:0;
                 float pitch=CameraRig.Instance?CameraRig.Instance.Pitch:0;
                 if(GameSession.Offline)SetMoveInput(axis,yaw,localJump,held,pitch);
@@ -90,11 +92,15 @@ namespace ElevatorGame
         public void SetMoveInput(Vector2 axis,float yaw,bool pressJump,bool grab,float pitch=0)
         {
             if(!IsAuthority||!float.IsFinite(axis.x)||!float.IsFinite(axis.y)||!float.IsFinite(yaw)||!float.IsFinite(pitch))return;
-            movement=Vector2.ClampMagnitude(axis,1);aimYaw=yaw%360;aimPitch=Mathf.Clamp(pitch,-80,80);jump|=pressJump;grabInput=grab;inputAt=Time.time;
+            bool driving=CanDrive;
+            movement=driving?Vector2.ClampMagnitude(axis,1):Vector2.zero;
+            aimYaw=yaw%360;aimPitch=Mathf.Clamp(pitch,-80,80);
+            if(driving){jump|=pressJump;grabInput=grab;}else jump=false;
+            inputAt=Time.time;
         }
         [ServerRpc] void InputServerRpc(Vector2 axis,float yaw,bool pressJump,bool left,bool right,float pitch)=>SetMoveInput(axis,yaw,pressJump,left||right,pitch);
         [ServerRpc] void WeaponServerRpc(bool pickup,bool use)=>WeaponAction(pickup,use);
-        public void WeaponAction(bool pickup,bool use){if(!IsAuthority||!Alive.Value||RoundManager.Instance.Phase.Value!=RoundPhase.Playing)return;if(pickup)WeaponSystem.PickupOrThrow(this);if(use)WeaponSystem.Use(this);}
+        public void WeaponAction(bool pickup,bool use){if(!IsAuthority||!Alive.Value||!CanDrive||RoundManager.Instance.Phase.Value!=RoundPhase.Playing)return;if(pickup)WeaponSystem.PickupOrThrow(this);if(use)WeaponSystem.Use(this);}
         public void ToggleReady(){if(GameSession.Offline)Ready.Value=!Ready.Value;else ReadyServerRpc();}
         [ServerRpc] public void ReadyServerRpc()
         {
@@ -109,7 +115,7 @@ namespace ElevatorGame
             bool lobby=RoundManager.Instance&&RoundManager.Instance.Phase.Value==RoundPhase.Lobby;
             bool playing=RoundManager.Instance&&RoundManager.Instance.Phase.Value!=RoundPhase.Results;
             if(!Alive.Value||!playing){Grab.ReleaseAll();HeldHands.Value=0;return;}
-            if(lobby&&(Body.position.y<-.5f||Body.position.y>5||Mathf.Abs(Body.position.x)>3.3f||Mathf.Abs(Body.position.z)>3.3f))
+            if(lobby&&(Body.position.y<-.5f||Body.position.y>5||Mathf.Abs(Body.position.x)>4.95f||Mathf.Abs(Body.position.z)>4.95f))
             {ResetForRound(RoundManager.SpawnPoint(Slot.Value));return;}
             if(IsBot.Value&&AI)AI.ApplyInput();
             else if(Time.time-inputAt>.3f){movement=Vector2.zero;grabInput=jump=false;}
@@ -125,7 +131,8 @@ namespace ElevatorGame
             jump=false;
             if(!Stunned)
             {
-                float spring=hanging?22:58;float damping=hanging?3.5f:7.5f;
+                // Keep the body upright during the brief input pause while preserving physical pulls.
+                float spring=hanging?22:CanDrive?58:82;float damping=hanging?3.5f:CanDrive?7.5f:11;
                 var wobble=Quaternion.Euler(Mathf.Sin(Time.time*7+Slot.Value)*movement.magnitude*5,0,-movement.x*6)*Vector3.up;
                 Body.AddTorque(Vector3.Cross(transform.up,wobble)*spring-Body.angularVelocity*damping,ForceMode.Acceleration);
                 Body.AddTorque(Vector3.up*Mathf.Clamp(Mathf.DeltaAngle(transform.eulerAngles.y,aimYaw)*.1f,-7,7),ForceMode.Acceleration);

@@ -106,8 +106,9 @@ namespace ElevatorGame
         }
         void ReachRest(int i,bool reaching)
         {
-            Vector3 destination=Shoulder(i)+(reaching?player.AimDirection*ArmLength:Vector3.down*.22f+transform.right*(i==0?-.075f:.075f));
-            hands[i].AddForce(Vector3.ClampMagnitude((destination-hands[i].position)*(reaching?65:18)-hands[i].linearVelocity*(reaching?5:2),60),ForceMode.Acceleration);
+            // Both free hands follow the view even before LMB. A held hand remains attached to its contact point.
+            Vector3 destination=Shoulder(i)+player.AimDirection*(reaching?ArmLength:ArmLength*.83f);
+            hands[i].AddForce(Vector3.ClampMagnitude((destination-hands[i].position)*125-hands[i].linearVelocity*12,90),ForceMode.Acceleration);
         }
         public void Attach(int i,Collider target,Vector3 point)
         {

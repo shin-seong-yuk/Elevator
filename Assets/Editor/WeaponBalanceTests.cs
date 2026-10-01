@@ -39,8 +39,8 @@ namespace ElevatorGame.Editor
                 }
                 else
                 {
-                    Check(WeaponSystem.Cooldown(kind)==1,"Melee interval is one second: "+kind);
-                    WeaponSystem.Use(p);Check(w.Prop.Action.Value==first+1&&w.RemainingAmmo==-1,"Held melee repeats after one second without ammo: "+kind);
+                    Check(WeaponSystem.Cooldown(kind)>1&&WeaponSystem.Cooldown(kind)<2,"Melee cooldown scales with impact: "+kind);
+                    WeaponSystem.Use(p);Check(w.Prop.Action.Value==first+1&&w.RemainingAmmo==-1,"Held melee repeats after cooldown without ammo: "+kind);
                 }
             }
         }

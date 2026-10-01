@@ -68,13 +68,13 @@ namespace ElevatorGame.Editor
             Check(round.Phase.Value==RoundPhase.Playing,"Round enters Playing");
             var p0=players[0];var p1=players[1];
             var rail=GameObject.Find("Back handrail").GetComponent<Collider>();
-            p0.Body.position=new Vector3(0,1,4.2f);
+            p0.Body.position=new Vector3(0,1,6.2f);
             p0.Grab.Attach(0,rail,rail.ClosestPoint(p0.transform.position));
             Check(PlayerEliminationController.Supported(p0,players),"Outside player attached to cabin survives");
-            p0.Grab.ReleaseAll();p0.Body.position=new Vector3(0,1,4.2f);p1.Body.position=new Vector3(0,1,2.7f);
+            p0.Grab.ReleaseAll();p0.Body.position=new Vector3(0,1,6.2f);p1.Body.position=new Vector3(0,1,2.7f);
             p1.Grab.Attach(0,p0.GetComponent<Collider>(),p0.transform.position);
             Check(PlayerEliminationController.Supported(p0,players),"Incoming player grab rescues outside player");
-            p1.Body.position=new Vector3(0,1,4.8f);
+            p1.Body.position=new Vector3(0,1,6.8f);
             p0.Grab.Attach(0,p1.GetComponent<Collider>(),p1.transform.position);
             Check(!PlayerEliminationController.Supported(p0,players),"Unsupported grab cycle does not grant immunity");
             foreach(var p in players){p.Grab.ReleaseAll();p.ResetForRound(RoundManager.SpawnPoint(p.Slot.Value));}
@@ -105,8 +105,8 @@ namespace ElevatorGame.Editor
             round.StageEnds.Value=round.NetworkManager.ServerTime.Time;
             round.StartRound();yield return .4;
             Check(players.All(p=>p.Alive.Value)&&round.Floor.Value==1,"Restart resets lives and floor");
-            players[1].Body.position=new Vector3(0,-5,7);yield return 1;
-            Check(!players[1].Alive.Value,"Outside unsupported player eliminated after grace");
+            players[1].ResetForRound(new Vector3(0,-5,7));yield return 1;
+            Check(!players[1].Alive.Value,"Outside unsupported player eliminated after grace: phase="+round.Phase.Value+" pos="+players[1].Body.position+" inside="+PlayerEliminationController.Inside(players[1].Body.position)+" supported="+PlayerEliminationController.Supported(players[1],players)+" alive="+players.Count(p=>p.Alive.Value));
             round.events.Cleanup(true);
             round.Phase.Value=RoundPhase.Results;round.StageEnds.Value=round.NetworkManager.ServerTime.Time;round.ReturnToLobby();
             Check(round.Phase.Value==RoundPhase.Lobby&&players.All(p=>!p.Ready.Value),"Return to lobby resets ready state");

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33c0b82840e5cb84eba0f2779fbe2ce2, type: 3}
+  m_Name: UfoEvent
+  m_EditorClassIdentifier: Assembly-CSharp::ElevatorGame.FloorEventDefinition
+  kind: 15
+  eventName: UNIDENTIFIED FLOOR OBJECT
+  hint: Do not stand under the tractor beam.
+  weight: 0.75
+  duration: 14
+  difficulty: 1
+  minimumFloor: 8
+  maximumFloor: 999
+  canCombine: 1
+  persistent: 0
+  prefab: {fileID: 6341833631976348381, guid: 8ee30a9edf7132642946571d9dff6dee, type: 3}

@@ -11,6 +11,11 @@ namespace ElevatorGame
             prop=GetComponent<NetworkProp>();grenade=bounce;armed=true;expires=Time.time+(bounce?2:4);prop.Body.useGravity=bounce;prop.Animate(bounce?2:1);
             foreach(var a in GetComponents<Collider>())foreach(var b in owner.GetComponentsInChildren<Collider>())UnityEngine.Physics.IgnoreCollision(a,b);
         }
+        public void InitializeEvent(float fuse)
+        {
+            prop=GetComponent<NetworkProp>();grenade=false;armed=true;expires=Time.time+fuse;
+            prop.Body.useGravity=false;prop.Animate(1);
+        }
         bool presented;
         void Update()
         {

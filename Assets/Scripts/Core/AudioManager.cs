@@ -15,7 +15,7 @@ namespace ElevatorGame
             voices=new AudioSource[16];
             for(int i=0;i<voices.Length;i++)
             {var go=new GameObject("Spatial voice "+i);go.transform.SetParent(transform);voices[i]=go.AddComponent<AudioSource>();voices[i].spatialBlend=.7f;voices[i].minDistance=2;voices[i].maxDistance=35;voices[i].rolloffMode=AudioRolloffMode.Linear;}
-            foreach(var cue in new[]{"ding","door","doorClose","grab","release","jump","step","fall","bump","impact","wind","roar","rumble","chicken","out","win","warning","throw","bite","whoosh","slam","dinoRun","runner","click","motor","cart","cartCrash","swing","heavySwing","hit","pistol","shotgun","rocket","launcher","zap","blower","grappler","explosion"})
+            foreach(var cue in new[]{"ding","door","doorClose","grab","release","jump","step","fall","bump","impact","wind","roar","rumble","chicken","fish","splash","tank","ufo","piano","drop","out","win","warning","throw","bite","whoosh","slam","dinoRun","runner","click","motor","cart","cartCrash","swing","heavySwing","hit","pistol","shotgun","rocket","launcher","zap","blower","grappler","explosion"})
                 clips[cue]=Synthesize(cue);
             motor=gameObject.AddComponent<AudioSource>();motor.clip=clips["motor"];motor.loop=true;motor.volume=0;motor.Play();
             air=gameObject.AddComponent<AudioSource>();air.clip=clips["wind"];air.loop=true;air.volume=0;air.Play();
@@ -88,6 +88,10 @@ namespace ElevatorGame
                     case "out":case "throw":case "jump":
                         phase+=2*Mathf.PI*Mathf.Lerp(cue=="jump"?180:650,cue=="jump"?500:70,n)/rate;v=Mathf.Sin(phase)*env*.4f;break;
                     case "chicken":phase+=2*Mathf.PI*(650+250*Mathf.Sin(t*40))/rate;v=Mathf.Sin(phase)*env*.35f;break;
+                    case "fish":case "splash":v=(filtered*1.2f+Mathf.Sin(2*Mathf.PI*(cue=="fish"?270:95)*t)*.2f)*env;break;
+                    case "tank":case "drop":v=(filtered*.8f+Mathf.Sin(2*Mathf.PI*(cue=="tank"?48:64)*t)*.4f)*env;break;
+                    case "ufo":phase+=2*Mathf.PI*(390+Mathf.Sin(t*23)*110)/rate;v=(Mathf.Sin(phase)*.32f+filtered*.22f)*env;break;
+                    case "piano":v=(Mathf.Sin(2*Mathf.PI*82*t)+Mathf.Sin(2*Mathf.PI*164*t)*.35f+filtered*.6f)*env;break;
                     case "warning":v=Mathf.Sin(2*Mathf.PI*680*t)*env*.23f*(Mathf.Sin(t*35)>0?1:0);break;
                     case "whoosh":v=filtered*Mathf.Sin(n*Mathf.PI)*.9f;break;
                     default:v=(Mathf.Sin(2*Mathf.PI*65*t)*.4f+filtered*.8f)*env;break;

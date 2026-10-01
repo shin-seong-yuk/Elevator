@@ -44,12 +44,13 @@ namespace ElevatorGame.Editor
             Check(!human.Grab.LeftHeld&&human.Grab.GripStrength==0,"Second heavy impact detaches exhausted grip");
             for(int i=0;i<60;i++)human.Grab.Tick(false,false);
             Check(human.Grab.GripStrength>4.9f&&human.Grab.GripStrength<5.1f,"Hidden grip recovers five points per physics second");human.enabled=true;
+            yield return .3; // let the released joint leave the physics step before teleporting for weapon tests
             foreach(WeaponKind kind in Enum.GetValues(typeof(WeaponKind)))
             {
                 weapons.ResetAll();r.events.Cleanup(true);r.BrokenPanels.Value=0;
                 foreach(var panel in UnityEngine.Object.FindObjectsByType<CabinPanel>(FindObjectsSortMode.None))panel.ResetHealth();
                 human.ResetForRound(new Vector3(0,1.15f,0));victim.ResetForRound(new Vector3(0,1.15f,1.8f));
-                yield return .15;human.SetMoveInput(Vector2.zero,0,false,false);
+                yield return .35;human.SetMoveInput(Vector2.zero,0,false,false);
                 var item=r.events.SpawnProp(9,new Vector3(0,1.2f,.4f),Vector3.zero,true).GetComponent<WeaponPickup>();item.Kind.Value=(int)kind;item.BornFloor.Value=r.Floor.Value;
                 WeaponSystem.PickupOrThrow(human);yield return .12;
                 Check(WeaponSystem.Held(human)==item,"F pickup: "+kind);
@@ -75,8 +76,8 @@ namespace ElevatorGame.Editor
             var neighbor=UnityEngine.Object.FindObjectsByType<CabinPanel>(FindObjectsSortMode.None).First(p=>p.index==26);
             wall.Damage(CabinPanel.MaxHealth);yield return .1;
             Check(wall.GetComponentsInChildren<Collider>().All(c=>!c.enabled)&&neighbor.GetComponent<Collider>().enabled,"Only struck wall section and attached rail open a hole");
-            human.ResetForRound(new Vector3(-2.1f,1.15f,wall.transform.position.z));human.Knock(Vector3.left*9,1.2f);yield return .45;
-            Check(human.Body.position.x< -3.35f,"Character passes through the broken wall");
+            human.ResetForRound(new Vector3(-3.75f,1.15f,wall.transform.position.z));human.Knock(Vector3.left*9,1.2f);yield return .45;
+            Check(human.Body.position.x< -5.025f,"Character passes through the broken wall");
             r.StartRound();yield return .1;Check(wall.GetComponent<Collider>().enabled,"Restart repairs wall holes");
             r.Stage.Value=ElevatorStage.Event;r.doors.SetAperture(1);
             foreach(var kind in new[]{EventKind.Chicken,EventKind.GiantHand})

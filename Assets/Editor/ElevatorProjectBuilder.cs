@@ -24,18 +24,9 @@ namespace ElevatorGame.Editor
                 Directory.CreateDirectory(Root+"/"+folder);
             AssetDatabase.Refresh();
             SetLayers();
-            cream=Mat("Porcelain",new Color(.86f,.88f,.8f));
-            teal=Mat("DeepTeal",new Color(.035f,.21f,.24f));
-            dark=Mat("Ink",new Color(.035f,.065f,.10f));
-            mint=Mat("Mint",new Color(.56f,.96f,.72f));
-            gold=Mat("Amber",new Color(1,.69f,.18f));
-            coral=Mat("Coral",new Color(1,.32f,.25f));
-            purple=Mat("Violet",new Color(.38f,.24f,.68f));
-            white=Mat("White",new Color(.98f,.99f,1));
-            rubber=AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(Root+"/Materials/Bouncy.asset");
-            if(!rubber){rubber=new PhysicsMaterial("Bouncy"){bounciness=.9f,dynamicFriction=.18f,staticFriction=.2f,bounceCombine=PhysicsMaterialCombine.Maximum};AssetDatabase.CreateAsset(rubber,Root+"/Materials/Bouncy.asset");}
+            InitializePalette();
             var player=BuildPlayer();
-            var props=new NetworkProp[11];
+            var props=new NetworkProp[16];
             for(int i=0;i<props.Length;i++)props[i]=BuildProp(i);
             var definitions=BuildEvents();
             var previous=EditorSceneManager.GetActiveScene();
@@ -43,7 +34,7 @@ namespace ElevatorGame.Editor
             var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
             RenderSettings.ambientMode=AmbientMode.Flat;RenderSettings.ambientLight=new Color(.53f,.65f,.7f);
             RenderSettings.fog=true;RenderSettings.fogColor=new Color(.06f,.13f,.19f);RenderSettings.fogDensity=.012f;
-            var cabin=BuildCabin();SurfaceOverlapFix.FixCabin(cabin);BuildCorridor();
+            var cabin=BuildCabin();SurfaceOverlapFix.FixCabin(cabin);BuildCorridor();CabinResize.ApplyToScene(cabin);
             PrefabUtility.SaveAsPrefabAsset(cabin,Root+"/Prefabs/Elevator/Cabin.prefab");
             var doors=cabin.GetComponent<ElevatorDoorController>();
             var systems=new GameObject("Elevator Game");
@@ -60,8 +51,8 @@ namespace ElevatorGame.Editor
             manager.NetworkConfig=new NetworkConfig {NetworkTransport=transport,TickRate=60,ConnectionApproval=true,EnableSceneManagement=true};
             var session=net.AddComponent<NetworkGameManager>();session.playerPrefab=player;
             session.networkPrefabs=props.Select(p=>p.GetComponent<NetworkObject>()).Concat(new[]{player.GetComponent<NetworkObject>()}).ToArray();
-            var camera=new GameObject("Main Camera");camera.tag="MainCamera";camera.transform.position=new Vector3(4.8f,3.4f,11);
-            camera.transform.LookAt(new Vector3(-2,1.8f,2));
+            var camera=new GameObject("Main Camera");camera.tag="MainCamera";camera.transform.position=new Vector3(7.2f,4.2f,14);
+            camera.transform.LookAt(new Vector3(0,1.8f,1));
             var cam=camera.AddComponent<Camera>();cam.fieldOfView=73;cam.nearClipPlane=.07f;cam.farClipPlane=130;
             cam.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing=true;cam.clearFlags=CameraClearFlags.SolidColor;cam.backgroundColor=new Color(.06f,.13f,.19f);
             camera.AddComponent<AudioListener>();camera.AddComponent<CameraRig>();
@@ -81,7 +72,20 @@ namespace ElevatorGame.Editor
             var fixedTime=timing.FindProperty("Fixed Timestep");if(fixedTime!=null && fixedTime.propertyType==SerializedPropertyType.Generic){fixedTime.FindPropertyRelative("m_Count").longValue=1;fixedTime.FindPropertyRelative("m_Rate.m_Numerator").longValue=60;fixedTime.FindPropertyRelative("m_Rate.m_Denominator").longValue=1;}timing.ApplyModifiedPropertiesWithoutUndo();
             PlayerSettings.runInBackground=true;
             SetupPostProcessing();AssetDatabase.SaveAssets();AssetDatabase.Refresh();
-            Debug.Log("ELEVATOR_BUILD_OK: scene, 22 prefabs, 12 definitions and network references generated.");
+            Debug.Log("ELEVATOR_BUILD_OK: scene, props, events and network references generated.");
+        }
+        static void InitializePalette()
+        {
+            cream=Mat("Porcelain",new Color(.86f,.88f,.8f));
+            teal=Mat("DeepTeal",new Color(.035f,.21f,.24f));
+            dark=Mat("Ink",new Color(.035f,.065f,.10f));
+            mint=Mat("Mint",new Color(.56f,.96f,.72f));
+            gold=Mat("Amber",new Color(1,.69f,.18f));
+            coral=Mat("Coral",new Color(1,.32f,.25f));
+            purple=Mat("Violet",new Color(.38f,.24f,.68f));
+            white=Mat("White",new Color(.98f,.99f,1));
+            rubber=AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(Root+"/Materials/Bouncy.asset");
+            if(!rubber){rubber=new PhysicsMaterial("Bouncy"){bounciness=.9f,dynamicFriction=.18f,staticFriction=.2f,bounceCombine=PhysicsMaterialCombine.Maximum};AssetDatabase.CreateAsset(rubber,Root+"/Materials/Bouncy.asset");}
         }
         static void SetLayers()
         {
@@ -168,9 +172,10 @@ namespace ElevatorGame.Editor
         }
         static NetworkProp BuildProp(int kind)
         {
-            string[] names={"BowlingBall","ShoppingCart","Dinosaur","Gorilla","GiantChicken","GiantHand","FloodSurface","Crate","LatePassenger","Weapon","Projectile"};
+            string[] names={"BowlingBall","ShoppingCart","Dinosaur","Gorilla","GiantChicken","GiantHand","FloodSurface","Crate","LatePassenger","Weapon","Projectile","FlyingFish","Tank","TankShell","Ufo","GrandPiano"};
             var root=new GameObject(names[kind]);root.layer=10;var t=root.transform;
-            Transform tail=null,head=null,jaw=null,leftLeg=null,rightLeg=null;
+            Transform tail=null,head=null,jaw=null,leftLeg=null,rightLeg=null,fishLeftFin=null,fishRightFin=null,saucerRing=null;
+            Renderer beamRenderer=null;
             switch(kind)
             {
                 case 0:
@@ -236,7 +241,7 @@ namespace ElevatorGame.Editor
                     Shape("Palm",PrimitiveType.Sphere,t,Vector3.zero,new Vector3(1.4f,.6f,1.45f),coral,true,10);
                     for(int i=0;i<4;i++)Shape("Finger",PrimitiveType.Capsule,t,new Vector3((i-1.5f)*.34f,0,-.9f),new Vector3(.3f,.65f,.3f),coral,true,10).transform.localRotation=Quaternion.Euler(90,0,0);
                     Shape("Thumb",PrimitiveType.Capsule,t,new Vector3(-.8f,0,-.25f),new Vector3(.35f,.47f,.35f),coral,true,10).transform.localRotation=Quaternion.Euler(0,0,-65);break;
-                case 6:Cube("Water",t,Vector3.zero,new Vector3(5.9f,.12f,5.9f),Mat("Water",new Color(.1f,.65f,.9f)),false,10);break;
+                case 6:Cube("Water",t,Vector3.zero,new Vector3(9.45f,.12f,9.45f),Mat("Water",new Color(.1f,.65f,.9f)),false,10);break;
                 case 7:
                     Cube("Box",t,Vector3.zero,Vector3.one*.8f,gold,true,10);Cube("Tape",t,new Vector3(0,.405f,0),new Vector3(.15f,.02f,.8f),cream,false,10);break;
                 case 8:
@@ -252,11 +257,62 @@ namespace ElevatorGame.Editor
                     leftLeg=Shape("Leg left",PrimitiveType.Capsule,t,new Vector3(-.24f,-.69f,0),new Vector3(.3f,.37f,.35f),dark,true,10).transform;
                     rightLeg=Shape("Leg right",PrimitiveType.Capsule,t,new Vector3(.24f,-.69f,0),new Vector3(.3f,.37f,.35f),dark,true,10).transform;
                     Cube("Briefcase",t,new Vector3(.65f,-.32f,0),new Vector3(.3f,.5f,.75f),gold,true,10);break;
+                case 11:
+                    Shape("Fish body",PrimitiveType.Sphere,t,Vector3.zero,new Vector3(.58f,.36f,.92f),Mat("FishAzure",new Color(.08f,.63f,.91f)),true,10);
+                    Shape("Fish belly",PrimitiveType.Sphere,t,new Vector3(0,-.13f,-.06f),new Vector3(.47f,.2f,.64f),cream,false,10);
+                    for(int side=-1;side<=1;side+=2)
+                    {
+                        Shape("Fish eye",PrimitiveType.Sphere,t,new Vector3(side*.27f,.12f,-.27f),Vector3.one*.13f,white,false,10);
+                        Shape("Fish pupil",PrimitiveType.Sphere,t,new Vector3(side*.34f,.12f,-.31f),Vector3.one*.06f,dark,false,10);
+                    }
+                    tail=new GameObject("Flapping tail").transform;tail.SetParent(t,false);tail.localPosition=new Vector3(0,0,.42f);
+                    Shape("Tail fin",PrimitiveType.Sphere,tail,new Vector3(0,0,.38f),new Vector3(.15f,.52f,.48f),coral,false,10);
+                    fishLeftFin=Shape("Left fin",PrimitiveType.Sphere,t,new Vector3(-.43f,.03f,.15f),new Vector3(.18f,.1f,.38f),gold,false,10).transform;
+                    fishRightFin=Shape("Right fin",PrimitiveType.Sphere,t,new Vector3(.43f,.03f,.15f),new Vector3(.18f,.1f,.38f),gold,false,10).transform;
+                    break;
+                case 12:
+                    Cube("Armored chassis",t,Vector3.zero,new Vector3(2.5f,.72f,2.75f),Mat("TankOlive",new Color(.25f,.33f,.18f)),true,10);
+                    for(int side=-1;side<=1;side+=2)
+                    {
+                        Cube("Tank track",t,new Vector3(side*1.19f,-.4f,0),new Vector3(.55f,.65f,3.04f),dark,true,10);
+                        for(int i=-2;i<=2;i++)Shape("Track wheel",PrimitiveType.Cylinder,t,new Vector3(side*1.51f,-.52f,i*.55f),new Vector3(.33f,.045f,.33f),gold,false,10).transform.localRotation=Quaternion.Euler(0,0,90);
+                    }
+                    Shape("Turret",PrimitiveType.Cylinder,t,new Vector3(0,.63f,-.2f),new Vector3(.82f,.3f,.82f),teal,false,10);
+                    Shape("Cannon",PrimitiveType.Cylinder,t,new Vector3(0,.77f,-1.52f),new Vector3(.23f,1.01f,.23f),dark,false,10).transform.localRotation=Quaternion.Euler(90,0,0);
+                    Shape("Muzzle",PrimitiveType.Cylinder,t,new Vector3(0,.77f,-2.52f),new Vector3(.31f,.12f,.31f),gold,false,10).transform.localRotation=Quaternion.Euler(90,0,0);
+                    break;
+                case 13:
+                    Shape("Explosive shell",PrimitiveType.Sphere,t,Vector3.zero,Vector3.one*.36f,coral,true,10);
+                    Shape("Shell tip",PrimitiveType.Sphere,t,new Vector3(0,0,-.22f),new Vector3(.21f,.21f,.25f),gold,false,10);
+                    root.AddComponent<WeaponProjectile>();break;
+                case 14:
+                    Shape("Saucer hull",PrimitiveType.Sphere,t,Vector3.zero,new Vector3(2.3f,.46f,2.3f),Mat("UfoSilver",new Color(.57f,.75f,.84f)),true,10);
+                    Shape("Glass dome",PrimitiveType.Sphere,t,new Vector3(0,.36f,0),new Vector3(1.05f,.73f,1.05f),Mat("UfoGlass",new Color(.24f,.92f,.88f)),false,10);
+                    saucerRing=new GameObject("Rotating lights").transform;saucerRing.SetParent(t,false);
+                    for(int i=0;i<8;i++){float angle=i*Mathf.PI/4;Shape("Saucer light",PrimitiveType.Sphere,saucerRing,new Vector3(Mathf.Cos(angle)*1.04f,-.11f,Mathf.Sin(angle)*1.04f),Vector3.one*.19f,i%2==0?gold:coral,false,10);}
+                    Shape("Tractor emitter",PrimitiveType.Cylinder,t,new Vector3(0,-.34f,0),new Vector3(.55f,.1f,.55f),mint,false,10);
+                    var beamMaterial=Mat("TractorBeam",new Color(.18f,.95f,.86f,.22f));
+                    beamMaterial.SetFloat("_Surface",1);beamMaterial.SetFloat("_Blend",0);
+                    beamMaterial.SetInt("_SrcBlend",(int)BlendMode.SrcAlpha);beamMaterial.SetInt("_DstBlend",(int)BlendMode.OneMinusSrcAlpha);
+                    beamMaterial.SetInt("_ZWrite",0);beamMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                    beamMaterial.SetOverrideTag("RenderType","Transparent");beamMaterial.renderQueue=3000;EditorUtility.SetDirty(beamMaterial);
+                    beamRenderer=Shape("Visible tractor beam",PrimitiveType.Cylinder,t,new Vector3(0,-1.15f,0),new Vector3(.77f,1.1f,.77f),beamMaterial,false,10).GetComponent<Renderer>();
+                    break;
+                case 15:
+                    Cube("Piano case",t,Vector3.zero,new Vector3(2.16f,1.04f,1.3f),dark,true,10);
+                    Cube("Piano lid",t,new Vector3(0,.58f,.25f),new Vector3(2.25f,.09f,1.7f),dark,false,10);
+                    Cube("Keyboard",t,new Vector3(0,.08f,-.75f),new Vector3(2.04f,.15f,.56f),white,false,10);
+                    for(int i=0;i<11;i++)Cube("Black key",t,new Vector3((i-5)*.17f,.17f,-.76f),new Vector3(.09f,.09f,.3f),dark,false,10);
+                    for(int side=-1;side<=1;side+=2)for(int end=-1;end<=1;end+=2)
+                        Cube("Piano leg",t,new Vector3(side*.84f,-.78f,end*.4f),new Vector3(.18f,.65f,.18f),gold,true,10);
+                    break;
             }
             if(kind==9){var collider=root.AddComponent<BoxCollider>();collider.size=new Vector3(.28f,.3f,.65f);root.AddComponent<WeaponPickup>().visualMaterial=gold;}
             if(kind==10){Shape("Projectile shell",PrimitiveType.Sphere,t,Vector3.zero,Vector3.one*.25f,coral,true,10);root.AddComponent<WeaponProjectile>();}
-            var rb=Rigid(root,kind>=9?8:kind==0?180:kind==1?45:kind==3?100:kind==4?50:kind==8?85:70);rb.angularDamping=kind==0?.08f:2;
-            Network(root);var prop=root.AddComponent<NetworkProp>();prop.impactBoost=kind==0?1.2f:kind==1?1:kind==9?.8f:0;
+            var rb=Rigid(root,kind==15?175:kind==12?240:kind==11?13:kind>=9?8:kind==0?180:kind==1?45:kind==3?100:kind==4?50:kind==8?85:70);rb.angularDamping=kind==0?.08f:2;
+            Network(root);var prop=root.AddComponent<NetworkProp>();prop.impactBoost=kind==15?1.5f:kind==13?1.1f:kind==12?1.1f:kind==11?.75f:kind==0?1.2f:kind==1?1:kind==9?.8f:0;
+            if(kind==11){var animator=root.AddComponent<FishAnimator>();animator.tail=tail;animator.leftFin=fishLeftFin;animator.rightFin=fishRightFin;}
+            if(kind==14){var animator=root.AddComponent<SaucerAnimator>();animator.lightRing=saucerRing;animator.beam=beamRenderer;}
             if(kind==2||kind==3||kind==4||kind==8)
             {var animator=root.AddComponent<PropAnimator>();animator.tail=tail;animator.head=head;animator.jaw=jaw;animator.leftLeg=leftLeg;animator.rightLeg=rightLeg;animator.stabilize=kind!=4;}
             var prefab=PrefabUtility.SaveAsPrefabAsset(root,Root+"/Prefabs/Props/"+names[kind]+".prefab");
@@ -264,23 +320,55 @@ namespace ElevatorGame.Editor
         }
         static FloorEventDefinition[] BuildEvents()
         {
-            Type[] types={typeof(WindEvent),typeof(BowlingBallEvent),typeof(DinosaurEvent),typeof(ShoppingCartEvent),typeof(GorillaEvent),typeof(ChickenEvent),typeof(GiantHandEvent),typeof(FloodEvent),typeof(VacuumEvent),typeof(EarthquakeEvent),typeof(EmptyFloorEvent),typeof(FakeEmptyEvent),typeof(StrangerEvent)};
-            string[] titles={"HOLD ON TIGHT","STRIKE!","JURASSIC SERVICE","CART TRAFFIC","UNINVITED GUEST","POULTRY IN MOTION","HELPING HAND?","HIGH WATER","NO ATMOSPHERE","SHAKEN, NOT STIRRED","NOTHING TO SEE","NOTHING TO SEE","RUNNING LATE"};
-            string[] hints={"Grab the rail. Gusts come in waves.","Watch the rebound.","Keep clear of the head. Save anyone bitten.","Carts can stay between floors.","Grab your friend before the throw.","Do not trust the chicken.","Break its grip by holding the cabin.","Grab high and keep your feet down.","Everything is being pulled outside.","Hold the rails.","Enjoy the silence.","Enjoy the silence.","Make room for the late passenger."};
-            var definitions=new FloorEventDefinition[13];
-            for(int i=0;i<13;i++)
+            Type[] types={typeof(WindEvent),typeof(BowlingBallEvent),typeof(DinosaurEvent),typeof(ShoppingCartEvent),typeof(GorillaEvent),typeof(ChickenEvent),typeof(GiantHandEvent),typeof(FloodEvent),typeof(VacuumEvent),typeof(EarthquakeEvent),typeof(EmptyFloorEvent),typeof(FakeEmptyEvent),typeof(StrangerEvent),typeof(FlyingFishEvent),typeof(TankEvent),typeof(UfoEvent),typeof(GrandPianoEvent)};
+            string[] titles={"HOLD ON TIGHT","STRIKE!","JURASSIC SERVICE","CART TRAFFIC","UNINVITED GUEST","POULTRY IN MOTION","HELPING HAND?","HIGH WATER","NO ATMOSPHERE","SHAKEN, NOT STIRRED","NOTHING TO SEE","NOTHING TO SEE","RUNNING LATE","FISH OUT OF WATER","ARMORED ROOM SERVICE","UNIDENTIFIED FLOOR OBJECT","GRAND FINALE"};
+            string[] hints={"Grab the rail. Gusts come in waves.","Watch the rebound.","Keep clear of the head. Save anyone bitten.","Carts can stay between floors.","Grab your friend before the throw.","Do not trust the chicken.","Break its grip by holding the cabin.","Grab high and keep your feet down.","Everything is being pulled outside.","Hold the rails.","Enjoy the silence.","Enjoy the silence.","Make room for the late passenger.","Ten fish flop, then leap into the lift.","Dodge the cannon and its blast.","Do not stand under the tractor beam.","Mind the falling piano."};
+            var definitions=new FloorEventDefinition[types.Length];
+            for(int i=0;i<types.Length;i++)
             {
-                var go=new GameObject(types[i].Name);go.AddComponent(types[i]);
-                var prefab=PrefabUtility.SaveAsPrefabAsset(go,Root+"/Prefabs/Events/"+types[i].Name+".prefab");UnityEngine.Object.DestroyImmediate(go);
-                string path=Root+"/ScriptableObjects/"+types[i].Name+".asset";
-                var d=AssetDatabase.LoadAssetAtPath<FloorEventDefinition>(path);
-                if(!d){d=ScriptableObject.CreateInstance<FloorEventDefinition>();AssetDatabase.CreateAsset(d,path);}
-                d.kind=(EventKind)i;d.eventName=titles[i];d.hint=hints[i];d.weight=i==10?.65f:1;
-                d.duration=i==10?5:i==2?22:14;d.minimumFloor=(i==4||i==6||i==8)?4:1;
-                d.maximumFloor=999;d.difficulty=1;d.canCombine=i!=10&&i!=11;d.persistent=i==3;
-                d.prefab=prefab.GetComponent<FloorEvent>();EditorUtility.SetDirty(d);definitions[i]=d;
+                definitions[i]=CreateEventDefinition(i,types[i],titles[i],hints[i]);
             }
             return definitions;
+        }
+        static FloorEventDefinition CreateEventDefinition(int i,Type type,string title,string hint)
+        {
+            var go=new GameObject(type.Name);go.AddComponent(type);
+            var prefab=PrefabUtility.SaveAsPrefabAsset(go,Root+"/Prefabs/Events/"+type.Name+".prefab");UnityEngine.Object.DestroyImmediate(go);
+            string path=Root+"/ScriptableObjects/"+type.Name+".asset";
+            var d=AssetDatabase.LoadAssetAtPath<FloorEventDefinition>(path);
+            if(!d){d=ScriptableObject.CreateInstance<FloorEventDefinition>();AssetDatabase.CreateAsset(d,path);}
+            d.kind=(EventKind)i;d.eventName=title;d.hint=hint;
+            d.weight=i==10?.65f:i==14?.72f:i==15?.75f:i==16?.82f:1;
+            d.duration=i==10?5:i==2?22:14;
+            d.minimumFloor=i==14?6:i==15?8:i==16?5:i==13?3:(i==4||i==6||i==8)?4:1;
+            d.maximumFloor=999;d.difficulty=1;d.canCombine=i!=10&&i!=11;d.persistent=i==3;
+            d.prefab=prefab.GetComponent<FloorEvent>();EditorUtility.SetDirty(d);return d;
+        }
+        [MenuItem("Elevator/Install New Floor Events")]
+        public static void InstallNewFloorEvents()
+        {
+            if(EditorApplication.isPlaying)throw new InvalidOperationException("Exit Play Mode before adding events.");
+            const string scenePath=Root+"/Scenes/Elevator.unity";
+            var current=EditorSceneManager.GetActiveScene();
+            if(current.isDirty)EditorSceneManager.SaveScene(current);
+            var scene=current.path==scenePath?current:EditorSceneManager.OpenScene(scenePath);
+            InitializePalette();
+            var round=UnityEngine.Object.FindFirstObjectByType<RoundManager>();
+            var session=UnityEngine.Object.FindFirstObjectByType<NetworkGameManager>();
+            if(!round||!session||round.events.propPrefabs.Length<11)throw new InvalidOperationException("Playable Elevator scene is missing its event or network references.");
+            var props=new NetworkProp[16];Array.Copy(round.events.propPrefabs,props,11);
+            for(int i=11;i<props.Length;i++)props[i]=BuildProp(i);
+            var definitions=new FloorEventDefinition[17];Array.Copy(round.events.definitions,definitions,13);
+            definitions[13]=CreateEventDefinition(13,typeof(FlyingFishEvent),"FISH OUT OF WATER","Ten fish flop, then leap into the lift.");
+            definitions[14]=CreateEventDefinition(14,typeof(TankEvent),"ARMORED ROOM SERVICE","Dodge the cannon and its blast.");
+            definitions[15]=CreateEventDefinition(15,typeof(UfoEvent),"UNIDENTIFIED FLOOR OBJECT","Do not stand under the tractor beam.");
+            definitions[16]=CreateEventDefinition(16,typeof(GrandPianoEvent),"GRAND FINALE","Mind the falling piano.");
+            round.events.propPrefabs=props;round.events.definitions=definitions;
+            session.networkPrefabs=props.Select(p=>p.GetComponent<NetworkObject>()).Concat(new[]{session.playerPrefab.GetComponent<NetworkObject>()}).ToArray();
+            EditorUtility.SetDirty(round.events);EditorUtility.SetDirty(session);
+            EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();AssetDatabase.Refresh();
+            Debug.Log("ELEVATOR_NEW_EVENTS_OK: four events and five props installed without rebuilding the cabin.");
         }
         static GameObject BuildCabin()
         {

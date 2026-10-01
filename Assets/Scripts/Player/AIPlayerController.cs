@@ -90,17 +90,17 @@ namespace ElevatorGame
                 if(suction)
                 {
                     float side=pos.x>=0?1:-1;
-                    Target=new Vector3(side*2.8f,1,-2.45f);
+                    Target=new Vector3(side*4.1f,1,-3.7f);
                     desired=(Target-pos);desired.y=0;desired.Normalize();
-                    if(pos.z< -2.1f)desired=new Vector3(side,0,0);
+                    if(pos.z< -3.25f)desired=new Vector3(side,0,0);
                 }
-                bool closeWall=Mathf.Abs(pos.x)>2.1f||pos.z< -2;
-                grab=(closeWall||pos.z>1.65f||actor.Body.linearVelocity.z>2)&&Random.value<grabFrequency;
+                bool closeWall=Mathf.Abs(pos.x)>3.5f||pos.z< -3.4f;
+                grab=(closeWall||pos.z>3.15f||actor.Body.linearVelocity.z>2)&&Random.value<grabFrequency;
                 if(grab)State=AIState.GrabObject;
                 if(Random.value<error*clumsiness){desired=Quaternion.Euler(0,Random.Range(-100,100),0)*desired;grab=false;}
             }
-            else if(Mathf.Abs(pos.x)>2.25f||pos.z>1.35f||pos.z< -2.25f)
-            {State=AIState.MoveToSafeArea;desired=new Vector3(-pos.x,0,-.65f-pos.z).normalized;grab=pos.z>2.2f;}
+            else if(Mathf.Abs(pos.x)>3.65f||pos.z>2.8f||pos.z< -3.65f)
+            {State=AIState.MoveToSafeArea;desired=new Vector3(-pos.x,0,-.65f-pos.z).normalized;grab=pos.z>3.6f;}
             else if(TryWeapons(difficulty)) { }
             else
             {
@@ -108,7 +108,7 @@ namespace ElevatorGame
                 if(Time.time>nextWander)
                 {
                     nextWander=Time.time+Random.Range(2,5);
-                    Target=new Vector3(Random.Range(-1.7f,1.7f),pos.y,Random.Range(-1.9f,.6f));
+                    Target=new Vector3(Random.Range(-2.6f,2.6f),pos.y,Random.Range(-2.8f,1.3f));
                 }
                 desired=Target-pos;desired.y=0;
                 if(desired.magnitude<.4f){desired=Vector3.zero;State=AIState.Idle;}else{desired.Normalize();State=AIState.MoveToSafeArea;}

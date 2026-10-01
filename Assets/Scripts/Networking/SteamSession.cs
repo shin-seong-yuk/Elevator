@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace ElevatorGame
 {
-    [Serializable] public sealed class SteamConfiguration{public uint appId=480;public string buildVersion="elevator-steam-3";}
+    [Serializable] public sealed class SteamConfiguration{public uint appId=480;public string buildVersion="elevator-steam-4";}
     public sealed class SteamRoom{public ulong id;public string name;public int members;}
     public sealed class SteamSession : MonoBehaviour
     {

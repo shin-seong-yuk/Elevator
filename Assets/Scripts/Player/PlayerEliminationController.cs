@@ -6,7 +6,7 @@ namespace ElevatorGame
     public sealed class PlayerEliminationController : MonoBehaviour
     {
         readonly Dictionary<PlayerController, float> outsideSince = new();
-        public static bool Inside(Vector3 p) => Mathf.Abs(p.x) <= 3.35f && p.z >= -3.35f && p.z <= 3.45f && p.y >= -.7f && p.y <= 5.5f;
+        public static bool Inside(Vector3 p) => Mathf.Abs(p.x) <= 5.025f && p.z >= -5.025f && p.z <= 5.175f && p.y >= -.7f && p.y <= 5.5f;
 
         // Traverse an undirected live-joint graph. A floating cycle does NOT count as safety.
         // Incoming grabs matter: someone inside can save a passive falling player.

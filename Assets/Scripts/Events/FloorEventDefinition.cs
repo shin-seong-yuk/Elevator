@@ -2,7 +2,8 @@
 
 namespace ElevatorGame
 {
-    public enum EventKind { Wind, BowlingBall, Dinosaur, ShoppingCart, Gorilla, Chicken, GiantHand, Flood, Vacuum, Earthquake, EmptyFloor, FakeEmpty, Stranger }
+    // Append only: serialized definitions and migration snapshots store these integer values.
+    public enum EventKind { Wind, BowlingBall, Dinosaur, ShoppingCart, Gorilla, Chicken, GiantHand, Flood, Vacuum, Earthquake, EmptyFloor, FakeEmpty, Stranger, FlyingFish, Tank, Ufo, GrandPiano }
 
     [CreateAssetMenu(menuName = "Elevator/Floor Event")]
     public sealed class FloorEventDefinition : ScriptableObject

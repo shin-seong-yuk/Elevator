@@ -107,7 +107,7 @@ namespace ElevatorGame.Editor
             float beforeJump=human.Body.position.y;human.SetMoveInput(Vector2.zero,0,true,false);yield return .18;
             Check(human.Body.position.y>beforeJump+.25f,"Shared motor jumps: before="+beforeJump+" after="+human.Body.position.y+" stunned="+human.Stunned);
             r.StageEnds.Value=r.Clock+40;yield return .8;
-            human.ResetForRound(new Vector3(-2.45f,1,-1.8f));
+            human.ResetForRound(new Vector3(-4.15f,1,-1.8f));
             drive=()=>human.SetMoveInput(Vector2.zero,-90,false,true);
             yield return 1.3;
             Check(human.HeldHands.Value>0,"Hold-to-grab acquires a cabin wall with physical hands");
@@ -136,7 +136,7 @@ namespace ElevatorGame.Editor
             Check(players.Any(p=>p.IsBot.Value&&p.AI.SafeDirection.z<-.2f),"AI senses wind and chooses cabin-back direction");
             r.events.Cleanup(true);
             foreach(var p in players)p.ResetForRound(RoundManager.SpawnPoint(p.Slot.Value));
-            var bot=players.First(p=>p.IsBot.Value);bot.ResetForRound(new Vector3(2.65f,1,-2.4f));bot.AI.DebugGrab=true;
+            var bot=players.First(p=>p.IsBot.Value);bot.ResetForRound(new Vector3(4.1f,1,-3.6f));bot.AI.DebugGrab=true;
             r.events.Force(EventKind.Vacuum);r.events.Prepare(1);r.events.Begin();
             yield return 2;
             Check(players.Any(p=>p.IsBot.Value&&p.HeldHands.Value>0),"AI can acquire a grab under suction");

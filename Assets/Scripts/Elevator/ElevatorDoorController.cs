@@ -8,8 +8,8 @@ namespace ElevatorGame
         public void SetAperture(float amount)
         {
             Aperture = Mathf.Clamp01(amount);
-            Set(left, new Vector3(-1.48f - Aperture * 2.95f, 1.95f, 3));
-            Set(right, new Vector3(1.48f + Aperture * 2.95f, 1.95f, 3));
+            Set(left, new Vector3((-1.48f - Aperture * 2.95f) * 1.5f, 1.95f, 4.5f));
+            Set(right, new Vector3((1.48f + Aperture * 2.95f) * 1.5f, 1.95f, 4.5f));
         }
         void Set(Rigidbody body, Vector3 target)
         {

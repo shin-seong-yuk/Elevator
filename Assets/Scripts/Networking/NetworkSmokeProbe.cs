@@ -62,8 +62,8 @@ namespace ElevatorGame
                 }
                 if(weaponStep==0&&elapsed>3&&local)
                 {var w=FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).FirstOrDefault();if(w){w.Kind.Value=4;w.Prop.Body.position=local.Body.position+Vector3.forward*.5f;}weaponStep=1;}
-                if(weaponStep==1&&elapsed>3.4f&&local){local.WeaponAction(true,false);weaponStep=2;}
-                if(weaponStep==2&&elapsed>4&&local){local.WeaponAction(false,true);foreach(var panel in FindObjectsByType<CabinPanel>(FindObjectsSortMode.None))if(panel.index==17||panel.index==15)panel.Damage(CabinPanel.MaxHealth);weaponStep=3;}
+                if(weaponStep==1&&elapsed>3.4f&&local&&local.CanDrive){local.WeaponAction(true,false);if(WeaponSystem.Held(local))weaponStep=2;}
+                if(weaponStep==2&&elapsed>4&&local&&local.CanDrive){local.WeaponAction(false,true);foreach(var panel in FindObjectsByType<CabinPanel>(FindObjectsSortMode.None))if(panel.index==17||panel.index==15)panel.Damage(CabinPanel.MaxHealth);weaponStep=3;}
                 if(step==2&&elapsed>8)
                 {
                     foreach(var p in players.Where(p=>p!=local))round.elimination.Eliminate(p);

@@ -26,7 +26,7 @@ namespace ElevatorGame
     }
     [Serializable] public sealed class MigrationValue
     {
-        public string name,kind,text;public float number;
+        public string name,kind,text;public float number;public Vector3 vector;
         // JsonUtility walks declared recursive field types even when the arrays are empty.
         // Store nested collections as a separate JSON payload to keep its type tree finite.
         public string childrenJson;
@@ -48,13 +48,16 @@ namespace ElevatorGame
     [Serializable] public sealed class MigrationSnapshot
     {
         public int sequence,epoch,phase,stage,floor,seed,winner,total,randomCalls,randomSeed,previousEvent;
-        public float remaining,survival,elapsed;public ulong broken;public string title;
+        public float remaining,survival,elapsed,dropStartsIn,dropEndsIn;public bool dropLaunched,dropLanded;public ulong broken;public string title;
         public MigrationPlayer[] players;public MigrationProp[] props;public MigrationEvent[] events;public MigrationJoint[] joints;
         public float[] panelHealth;public int[] cooldownSlots;public float[] weaponCooldowns;
         public static MigrationSnapshot Capture(int sequence,int epoch)
         {
             var r=RoundManager.Instance;
             var snapshot=new MigrationSnapshot{sequence=sequence,epoch=epoch,phase=(int)r.Phase.Value,stage=(int)r.Stage.Value,floor=r.Floor.Value,seed=r.Seed.Value,winner=r.Winner.Value,total=r.TotalCount.Value,remaining=r.Remaining,broken=r.BrokenPanels.Value,title=r.EventTitle.Value.ToString(),survival=(float)GameSession.Instance.SurvivalSeconds,elapsed=(float)(Time.timeAsDouble-GameSession.Instance.StartedAt)};
+            snapshot.dropStartsIn=r.DropAt.Value==0?0:(float)(r.DropAt.Value-r.Clock);
+            snapshot.dropEndsIn=r.DropEnds.Value==0?0:(float)(r.DropEnds.Value-r.Clock);
+            snapshot.dropLaunched=r.DropLaunched;snapshot.dropLanded=r.DropLanded;
             var props=UnityEngine.Object.FindObjectsByType<NetworkProp>(FindObjectsSortMode.InstanceID).Where(p=>p.IsActive).ToArray();
             var context=new MigrationContext(props);
             snapshot.players=RoundManager.Players().Select(p=>new MigrationPlayer{slot=p.Slot.Value,steam=p.SteamId.Value,bot=p.IsBot.Value,alive=p.Alive.Value,ready=p.Ready.Value,body=MigrationBody.Read(p.Body),left=MigrationBody.Read(p.Grab.leftHand.GetComponent<Rigidbody>()),right=MigrationBody.Read(p.Grab.rightHand.GetComponent<Rigidbody>()),grip=p.Grab.GripStrength,release=p.Grab.ReleaseRemaining,impact=p.Grab.ImpactRemaining,stun=p.StunRemaining,aim=p.AimDirection,grips=p.Grab.CaptureGrips(context)}).ToArray();
@@ -87,6 +90,7 @@ namespace ElevatorGame
             }
             var context=new MigrationContext(restored);context.RestoreJoints(joints);
             r.Floor.Value=floor;r.Seed.Value=seed;r.Winner.Value=winner;r.TotalCount.Value=total;r.BrokenPanels.Value=broken;
+            r.RestoreDrop(dropStartsIn,dropEndsIn,dropLaunched,dropLanded);
             foreach(var p in UnityEngine.Object.FindObjectsByType<CabinPanel>(FindObjectsSortMode.None))p.RestoreHealth(panelHealth[p.index]);
             foreach(var saved in players){var p=RoundManager.Players().FirstOrDefault(a=>a.Slot.Value==saved.slot);if(p)p.Grab.RestoreGrips(saved.grips,context);}
             r.events.RestoreMigration(events,context,floor,randomSeed,randomCalls,(EventKind)previousEvent);
@@ -147,6 +151,7 @@ namespace ElevatorGame
         {
             var v=new MigrationValue();if(value==null){v.kind="null";return v;}
             if(type==typeof(float)||type==typeof(int)||type==typeof(bool)){v.kind="number";v.number=Convert.ToSingle(value);}
+            else if(type==typeof(Vector3)){v.kind="vector3";v.vector=(Vector3)value;}
             else if(typeof(UnityEngine.Object).IsAssignableFrom(type)){v.kind="reference";v.text=Reference(value as UnityEngine.Object);}
             else if(value is IDictionary dictionary){v.kind="dictionary";var values=new List<MigrationValue>();foreach(DictionaryEntry item in dictionary){values.Add(Encode(item.Key,type.GetGenericArguments()[0]));values.Add(Encode(item.Value,type.GetGenericArguments()[1]));}v.values=values.ToArray();}
             else if(value is IList list){v.kind="list";Type element=type.IsArray?type.GetElementType():type.GetGenericArguments()[0];v.values=list.Cast<object>().Select(item=>Encode(item,element)).ToArray();}
@@ -157,6 +162,7 @@ namespace ElevatorGame
         {
             if(v.kind=="null")return null;
             if(v.kind=="number")return Convert.ChangeType(v.number,type);
+            if(v.kind=="vector3")return v.vector;
             if(v.kind=="reference")return Resolve(v.text,type);
             if(v.kind=="dictionary"){var result=current as IDictionary??(IDictionary)Activator.CreateInstance(type);result.Clear();for(int i=0;i<v.values.Length;i+=2){var key=Decode(v.values[i],type.GetGenericArguments()[0]);if(key is UnityEngine.Object obj&&!obj)continue;if(key!=null)result[key]=Decode(v.values[i+1],type.GetGenericArguments()[1]);}return result;}
             if(v.kind=="list"){Type element=type.IsArray?type.GetElementType():type.GetGenericArguments()[0];var list=type.IsArray?(IList)Array.CreateInstance(element,v.values.Length):current as IList??(IList)Activator.CreateInstance(type);if(!type.IsArray)list.Clear();for(int i=0;i<v.values.Length;i++){var item=Decode(v.values[i],element);if(type.IsArray)list[i]=item;else list.Add(item);}return list;}

@@ -28,7 +28,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 5.9, y: 0.12, z: 5.9}
+  m_LocalScale: {x: 9.45, y: 0.12, z: 9.45}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8490616224314432825}
@@ -237,5 +237,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ElevatorGame.NetworkProp
   ShowTopMostFoldoutHeaderGroup: 1
+  PrefabIndex: -1
+  MigrationKey: -1
   persistent: 0
   impactBoost: 0

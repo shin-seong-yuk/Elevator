@@ -26,8 +26,8 @@ namespace ElevatorGame
             if(!playing)
             {
                 following=false;Target=null;
-                transform.position=Vector3.Lerp(transform.position,new Vector3(4.8f,3.4f,11),Time.deltaTime*3);
-                transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(new Vector3(-2,1.8f,2)-transform.position),Time.deltaTime*3);
+                transform.position=Vector3.Lerp(transform.position,new Vector3(7.2f,4.2f,14),Time.deltaTime*3);
+                transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(new Vector3(0,1.8f,1)-transform.position),Time.deltaTime*3);
                 Cursor.lockState=CursorLockMode.None;Cursor.visible=true;return;
             }
             if(!following||(previousPhase!=RoundPhase.Lobby&&round.Phase.Value==RoundPhase.Lobby))
@@ -68,6 +68,8 @@ namespace ElevatorGame
             if(!Target)return;
             Vector3 focus=Target.transform.position+Vector3.up*.92f+orbit*Vector3.forward*.45f;
             Vector3 desired=focus-orbit*Vector3.forward*3.5f;
+            if(round.DropActive)
+                desired+=new Vector3(Mathf.Sin(Time.unscaledTime*37),Mathf.Sin(Time.unscaledTime*49),0)*(.035f+.06f*round.DropProgress);
             Vector3 direction=(desired-focus).normalized;
             // Cabin/props only: own and other character colliders do not push the camera into the head.
             if(UnityEngine.Physics.SphereCast(focus,.16f,direction,out var hit,3.5f,1<<8|1<<10,QueryTriggerInteraction.Ignore))

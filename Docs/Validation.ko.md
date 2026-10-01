@@ -1,4 +1,4 @@
-﻿# 검증 기록 — 2026-09-28
+# 검증 기록 — 2026-09-28
 
 - Unity 6000.3.19f1 Windows Development Build 성공. 실행 파일: Builds/Windows/Elevator.exe.
 - 싱글 플레이: TestResults/single-player-smoke.txt 통과. 네트워크 없이 사람 1 + AI 5, 공유 이동/점프, 손 접점 잡기와 몸통 움직임, 바람 대응, 흡입 중 AI 잡기, 13종 이벤트 실행/정리, 관전, AI 승리/사람 승리, 재시작 확인.
@@ -73,3 +73,22 @@
 - `chaos-smoke.txt`: 수정 후 무기 10종, 악력, 파손·복구, 위험물 수량 검사 통과. `gameplay-smoke.txt`: 13종 이벤트 및 승패·재시작·로비 복귀 검사 통과.
 - 최신 Windows 빌드 성공(오류 0, Unity Inference/Sentis 셰이더 경고 485). 프리팹 26개의 Missing Script/깨진 참조 0개 확인.
 - `Run-LobbyProcesses.ps1`로 별도 Windows 호스트/클라이언트 2개를 실행해 16개 검사 통과: 미준비 시작 차단, 준비→취소→재준비 RPC, 방장 R 시작, 무기/투사체/타격/파손 동기화, 승자, 재시작, 서버 권한 물리. 런타임 참조/RPC 예외 없음. LAN 전송 검사이며 서로 다른 Steam 계정 간 Relay 실험을 의미하지 않습니다.
+
+## 2026-10-01 동적 기믹과 물리 조정
+- 현재 Elevator 씬에 FlyingFish, Tank, Ufo, GrandPiano 정의 4개와 네트워크 물체 프리팹 5개를 추가했습니다. 생성 프리팹과 수작업 Cabin은 재생성하지 않았습니다.
+- dynamic-floors.txt: 물고기 10마리 생성 및 문 안쪽 진입, 탱크 포탄, UFO 진입·흡입 펄스, 피아노 2대 이상 진입, 추락 시작·착지 충격, 시선 추종 팔, 근접 무기 쿨타임 검증 통과.
+- gameplay-smoke.txt: 전체 17종 층 이벤트와 승패·재시작 통과. single-player-smoke.txt: 6인 싱글, AI, 관전·결과 검사 통과.
+- chaos-smoke.txt: 무기 10종, 잡기, 바닥·벽 파손·복구 통과. 뒤로 밀리는 중 F키로 던져도 무기가 전방으로 날아가게 보정했습니다.
+- weapon-balance.txt: 근접 무기 충격에 따른 쿨타임과 기존 원거리 탄약 검증 통과.
+- steam-migration-smoke.txt: 신규 이벤트 포함 17종의 개체·타이머·난수 복원 및 추락 중 남은 시간 복원 검증 통과. Steam Relay 실계정 간 전환은 이 단일 계정 환경에서 직접 실험하지 않았습니다.
+
+## 2026-10-01 엘리베이터 확대와 씬 마감
+
+- Unity 공식 MCP에서 작업 프로젝트 `C:/Users/sob50/Elavator/Assets` 연결을 확인하고, 에디터의 기본 SampleScene 대신 플레이 씬 `Assets/Elevator/Scenes/Elevator.unity`를 열었습니다.
+- 바닥 가로·세로 1.5배, 높이 유지. 16개 바닥·24개 벽 파손 패널, 문, 안전 구역, 로비 바닥 접점과 AI 이동 범위를 함께 조정했습니다.
+- 넓어진 수면(9.45 × 9.45m), 문 위 상단 벽, 로비 끝 벽·천장 틈, 문틀에 가려진 안내 글자를 씬에 직접 연결했습니다.
+- 공룡 물기는 입 근처의 한 명만 붙잡고, 꼬리는 몸의 회전 궤적에 닿은 캐릭터만 타격합니다. 포효는 전방, 발구르기는 가까운 범위에만 적용합니다.
+- `dynamic-floors.txt`: 확대 치수·문·로비 이음·상단 벽·글자 위치·수면·공룡 선택적 피격과 신규 기믹 통과.
+- `chaos-smoke.txt`: 무기 10종·악력·확대된 벽/바닥 파손·복구 통과. `single-player-smoke.txt`: AI 5명과 관전·승패·재시작 및 17종 이벤트 통과.
+- `gameplay-smoke.txt`: 17종 공통 이벤트, 호스트 라운드, 생존/탈락, 승패·재시작 통과. `steam-migration-smoke.txt`: 공룡 상태를 포함한 17종 이벤트와 무기·잡기·추락 상태 복원 통과.
+- 이번 변경의 Windows 빌드는 사용자 요청에 따라 보류했습니다. 위의 검사는 Unity 에디터에서 수행했습니다.

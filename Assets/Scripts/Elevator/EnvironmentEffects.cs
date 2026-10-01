@@ -30,7 +30,7 @@ namespace ElevatorGame
             var title=r.EventTitle.Value.ToString();
             bool wind=eventActive&&(title.Contains("HOLD")||title.Contains("ATMOSPHERE"));
             var emission=dust.emission;emission.rateOverTime=wind?90:0;
-            bool tremor=eventActive&&title.Contains("SHAKEN");
+            bool tremor=(eventActive&&title.Contains("SHAKEN"))||r.DropActive;
             for(int i=0;i<lights.Length;i++)
             {
                 lights[i].intensity=tremor?2.8f+Mathf.Sin(Time.time*23+i)*1.4f:3.4f;

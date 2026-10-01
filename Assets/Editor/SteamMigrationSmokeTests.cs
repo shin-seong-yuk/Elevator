@@ -51,6 +51,7 @@ namespace ElevatorGame.Editor
             all[1].Grab.Attach(1,actor.GetComponent<Collider>(),actor.Body.position);
             var w=r.events.SpawnProp(9,actor.Body.position+Vector3.forward*.4f,Vector3.zero,true).GetComponent<WeaponPickup>();w.Kind.Value=4;w.RestoreAmmo(1);w.BornFloor.Value=6;w.Holder.Value=actor.Slot.Value;
             r.Floor.Value=8;r.BrokenPanels.Value=(1UL<<3)|(1UL<<24);r.Stage.Value=ElevatorStage.Moving;r.StageEnds.Value=r.Clock+7.25f;
+            r.RestoreDrop(-.25,1.1,true,false);
             var state=SteamSession.Unpack(SteamSession.Pack(MigrationSnapshot.Capture(20,3)));
             r.events.Cleanup(true);r.GetComponent<WeaponSystem>().ResetAll();ClearActors();yield return .1;
             state.Restore(_=>0);all=RoundManager.Players();actor=all[0];
@@ -58,11 +59,12 @@ namespace ElevatorGame.Editor
             Check(all[1].Grab.RightHeld&&all[1].Grab.ConnectedBodies().Contains(actor.Body),"Player-to-player grip reconnects");
             Check(Mathf.Abs(actor.Grab.GripStrength-40)<.1f,"Hidden grip stamina preserved");
             Check(r.Floor.Value==8&&r.BrokenPanels.Value==state.broken&&Mathf.Abs(r.Remaining-7.25f)<.1f,"Floor, holes and remaining stage time preserved");
+            Check(r.DropActive&&r.DropLaunched&&!r.DropLanded&&Mathf.Abs((float)(r.DropEnds.Value-r.Clock)-1.1f)<.1f,"Mid-drop timing and impact phase preserved");
             var held=WeaponSystem.Held(actor);Check(held&&held.Kind.Value==4&&held.BornFloor.Value==6&&held.RemainingAmmo==1,"Weapon type, holder, remaining ammo and four-floor age preserved");
             yield return .1;
             Check(actor.Grab.LeftHeld,"Restored grip survives the reconnect input grace period");
             var floor=UnityEngine.Object.FindObjectsByType<CabinPanel>(FindObjectsSortMode.None).First(p=>p.index==0);
-            Check(Mathf.Abs(floor.transform.lossyScale.x-1.625f)<.0001f,"Floor tile dimensions close seams");
+            Check(Mathf.Abs(floor.transform.lossyScale.x-2.4375f)<.0001f,"Expanded floor tile dimensions close seams");
             Check(errors.Count==0,"No checkpoint runtime errors");r.enabled=true;
         }
         [Serializable] public sealed class EventEnvelope{public MigrationEvent[] events;}

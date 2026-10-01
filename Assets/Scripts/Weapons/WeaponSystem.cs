@@ -35,7 +35,14 @@ namespace ElevatorGame
         {
             if(!p.IsAuthority)return;var w=Held(p);if(!w)return;w.Holder.Value=-1;w.Prop.Body.isKinematic=false;
             w.Prop.Body.position=p.Body.position+Vector3.up*.6f+p.AimDirection*1.1f;
-            w.Prop.Body.linearVelocity=p.Body.linearVelocity+(thrown?p.AimDirection*12+Vector3.up*2:Vector3.zero);
+            Vector3 velocity=p.Body.linearVelocity+(thrown?p.AimDirection*12+Vector3.up*2:Vector3.zero);
+            if(thrown)
+            {
+                // A blast may knock the carrier backward; F still has to throw forward.
+                float forward=Vector3.Dot(velocity,p.AimDirection);
+                if(forward<10)velocity+=p.AimDirection*(10-forward);
+            }
+            w.Prop.Body.linearVelocity=velocity;
             w.Prop.Body.angularVelocity=thrown?p.transform.right*12:Vector3.zero;
             foreach(var c in w.GetComponents<Collider>())c.enabled=true;
             if(thrown)p.PlaySound("throw");
@@ -88,9 +95,13 @@ namespace ElevatorGame
             }
 
         }
+        // Longer reach/impulse takes longer to wind up again. Shared by humans, bots and UI/tests.
+        public static float MeleeCooldown(float knockback,float stun)=>.45f+knockback*.065f+stun*.4f;
         public static float Cooldown(WeaponKind kind)=>kind switch
         {
-            WeaponKind.Bat or WeaponKind.Hammer or WeaponKind.BoxingGlove or WeaponKind.ShockStaff=>1f,
+            WeaponKind.Bat or WeaponKind.ShockStaff=>MeleeCooldown(Mathf.Sqrt(8*8+2*2),1),
+            WeaponKind.BoxingGlove=>MeleeCooldown(Mathf.Sqrt(10*10+6*6),1),
+            WeaponKind.Hammer=>MeleeCooldown(Mathf.Sqrt(13*13+2*2),1),
             WeaponKind.Bazooka=>2.4f,WeaponKind.GrenadeLauncher=>1.8f,
             WeaponKind.Blower=>.25f,WeaponKind.Pistol=>.45f,_=>.8f
         };
