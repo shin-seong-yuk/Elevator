@@ -5,6 +5,8 @@ namespace ElevatorGame
 {
     public sealed class CameraRig : MonoBehaviour
     {
+        public static readonly Vector3 MenuPosition=new(0,3.2f,14);
+        public static readonly Vector3 MenuFocus=new(3,2,4.5f);
         public static CameraRig Instance {get;private set;}
         public float Yaw {get;private set;}
         public float Pitch => pitch;
@@ -26,8 +28,8 @@ namespace ElevatorGame
             if(!playing)
             {
                 following=false;Target=null;
-                transform.position=Vector3.Lerp(transform.position,new Vector3(7.2f,4.2f,14),Time.deltaTime*3);
-                transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(new Vector3(0,1.8f,1)-transform.position),Time.deltaTime*3);
+                transform.position=Vector3.Lerp(transform.position,MenuPosition,Time.deltaTime*3);
+                transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(MenuFocus-transform.position),Time.deltaTime*3);
                 Cursor.lockState=CursorLockMode.None;Cursor.visible=true;return;
             }
             if(!following||(previousPhase!=RoundPhase.Lobby&&round.Phase.Value==RoundPhase.Lobby))

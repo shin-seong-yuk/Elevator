@@ -760,7 +760,7 @@ Rigidbody:
   m_Mass: 85
   m_LinearDamping: 0.3
   m_AngularDamping: 2
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_CenterOfMass: {x: 0, y: -0.55, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
   m_IncludeLayers:
@@ -769,7 +769,7 @@ Rigidbody:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_ImplicitCom: 1
+  m_ImplicitCom: 0
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
@@ -860,6 +860,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ElevatorGame.NetworkProp
   ShowTopMostFoldoutHeaderGroup: 1
+  PrefabIndex: -1
+  MigrationKey: -1
   persistent: 0
   impactBoost: 0
 --- !u!114 &9094239140131978659

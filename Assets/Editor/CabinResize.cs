@@ -75,7 +75,7 @@ namespace ElevatorGame.Editor
                     case "Carpet edging": SetXZ(child, p.x, 16.075f, s.x, 22.35f); break;
                     case "Entry surround":
                         wallMaterial = child.GetComponent<Renderer>().sharedMaterial;
-                        SetXZ(child, Mathf.Sign(p.x) * 5.7f, 4.5f, 2.4f, s.z);
+                        SetXZ(child, Mathf.Sign(p.x) * 5.925f, 4.5f, 1.85f, s.z);
                         p = child.localPosition; p.y = 2.8f; child.localPosition = p;
                         s = child.localScale; s.y = 5.6f; child.localScale = s;
                         break;

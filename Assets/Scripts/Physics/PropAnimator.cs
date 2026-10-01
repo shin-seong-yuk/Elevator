@@ -10,7 +10,11 @@ namespace ElevatorGame
         void FixedUpdate()
         {
             if(prop&&prop.IsAuthority&&!prop.Body.isKinematic&&stabilize)
-                prop.Body.AddTorque(Vector3.Cross(transform.up,Vector3.up)*35-prop.Body.angularVelocity*5,ForceMode.Acceleration);
+            {
+                bool runner=prop.PrefabIndex==8;
+                float spring=runner?130:35, damping=runner?18:5;
+                prop.Body.AddTorque(Vector3.Cross(transform.up,Vector3.up)*spring-prop.Body.angularVelocity*damping,ForceMode.Acceleration);
+            }
         }
         void LateUpdate()
         {

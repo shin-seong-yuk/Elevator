@@ -34,9 +34,17 @@ namespace ElevatorGame.Editor
             var lintel=lobby.Find("Entry lintel").GetComponent<Collider>();
             Check(lintel.bounds.min.y<4.5f&&lintel.bounds.max.y>5.5f,"Solid lintel seals the space above the elevator door");
             var entranceText=lobby.Find("Entry plaque");var serviceText=lobby.Find("Service sign");
-            Check(Mathf.Abs(entranceText.position.x)>5.8f&&Mathf.Abs(serviceText.position.x)>5.8f&&entranceText.position.z>4.8f&&entranceText.GetComponent<TextMesh>().characterSize<.1f,"Entrance signs fit beside the widened door frame");
+            Check(Mathf.Abs(entranceText.position.x)>=5.79f&&Mathf.Abs(serviceText.position.x)>=5.79f&&entranceText.position.z>4.8f&&entranceText.GetComponent<TextMesh>().characterSize<.1f,"Entrance signs fit beside the widened door frame");
             var far=lobby.Find("Lobby far wall").GetComponent<Collider>();var ceiling=lobby.Find("Lobby ceiling").GetComponent<Collider>();
             Check(far.bounds.max.y>ceiling.bounds.min.y+.05f,"Far lobby wall overlaps the ceiling to close the upper seam");
+            Check(Mathf.Abs(CameraRig.MenuPosition.x)<6.8f&&CameraRig.MenuFocus.x>0,"Menu camera frames the elevator from inside the hallway");
+            foreach(var panel in cabin.GetComponentsInChildren<CabinPanel>().Where(p=>p.index==30||p.index==31||p.index==38||p.index==39))
+                Check(panel.GetComponent<Collider>().bounds.max.z<4.14f,"Door-side wall tile ends behind jamb: "+panel.index);
+            var surrounds=lobby.GetComponentsInChildren<Transform>().Where(t=>t.name=="Entry surround").ToArray();
+            Check(surrounds.Length==2&&surrounds.All(t=>Mathf.Abs(t.position.x)-t.lossyScale.x*.5f>=4.99f),"Both entrance surrounds clear the widened cabin walls");
+            var runnerPrefab=round.events.propPrefabs[8];
+            var runnerBody=new SerializedObject(runnerPrefab.GetComponent<Rigidbody>());
+            Check(runnerBody.FindProperty("m_CenterOfMass").vector3Value.y<-.5f,"Late passenger uses a low center of mass");
             Check(round.events.definitions.Length==17&&round.events.propPrefabs.Length==16,"Four events and five physical prefabs are wired into the scene");
             Check(WeaponSystem.Cooldown(WeaponKind.Hammer)>WeaponSystem.Cooldown(WeaponKind.BoxingGlove)&&WeaponSystem.Cooldown(WeaponKind.BoxingGlove)>WeaponSystem.Cooldown(WeaponKind.Bat),"Melee cooldown follows knockback strength");
             Check(Mathf.Abs(PlayerController.InputPauseSeconds-.2f)<.001f,"Input pause shortened to 0.2 seconds");
@@ -86,6 +94,11 @@ namespace ElevatorGame.Editor
             Check(Props(15).Length>=2,"Multiple physical grand pianos enter the floor");
             Check(Props(15).Any(p=>p.Body.position.z<5),"A piano travels toward the elevator");
             round.events.Cleanup(true);yield return .15;
+            var runner=round.events.SpawnProp(8,new Vector3(0,2,8),Vector3.zero,false);
+            runner.Body.useGravity=false;runner.Body.rotation=Quaternion.Euler(0,0,65);runner.Body.angularVelocity=Vector3.zero;
+            yield return .8;
+            Check(Vector3.Angle(runner.transform.up,Vector3.up)<25,"Late passenger rights itself after a hard lean");
+            runner.Remove();yield return .1;
             foreach(var p in RoundManager.Players())p.ResetForRound(RoundManager.SpawnPoint(p.Slot.Value));
             round.Stage.Value=ElevatorStage.Moving;round.StageEnds.Value=round.Clock+8;
             round.enabled=true;round.RestoreDrop(.1,1.5,false,false);

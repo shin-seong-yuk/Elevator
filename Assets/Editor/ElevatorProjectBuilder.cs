@@ -34,7 +34,7 @@ namespace ElevatorGame.Editor
             var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
             RenderSettings.ambientMode=AmbientMode.Flat;RenderSettings.ambientLight=new Color(.53f,.65f,.7f);
             RenderSettings.fog=true;RenderSettings.fogColor=new Color(.06f,.13f,.19f);RenderSettings.fogDensity=.012f;
-            var cabin=BuildCabin();SurfaceOverlapFix.FixCabin(cabin);BuildCorridor();CabinResize.ApplyToScene(cabin);
+            var cabin=BuildCabin();SurfaceOverlapFix.FixCabin(cabin);BuildCorridor();CabinResize.ApplyToScene(cabin);HotelEntranceFix.FixCabin(cabin);
             PrefabUtility.SaveAsPrefabAsset(cabin,Root+"/Prefabs/Elevator/Cabin.prefab");
             var doors=cabin.GetComponent<ElevatorDoorController>();
             var systems=new GameObject("Elevator Game");
@@ -51,8 +51,8 @@ namespace ElevatorGame.Editor
             manager.NetworkConfig=new NetworkConfig {NetworkTransport=transport,TickRate=60,ConnectionApproval=true,EnableSceneManagement=true};
             var session=net.AddComponent<NetworkGameManager>();session.playerPrefab=player;
             session.networkPrefabs=props.Select(p=>p.GetComponent<NetworkObject>()).Concat(new[]{player.GetComponent<NetworkObject>()}).ToArray();
-            var camera=new GameObject("Main Camera");camera.tag="MainCamera";camera.transform.position=new Vector3(7.2f,4.2f,14);
-            camera.transform.LookAt(new Vector3(0,1.8f,1));
+            var camera=new GameObject("Main Camera");camera.tag="MainCamera";camera.transform.position=CameraRig.MenuPosition;
+            camera.transform.LookAt(CameraRig.MenuFocus);
             var cam=camera.AddComponent<Camera>();cam.fieldOfView=73;cam.nearClipPlane=.07f;cam.farClipPlane=130;
             cam.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing=true;cam.clearFlags=CameraClearFlags.SolidColor;cam.backgroundColor=new Color(.06f,.13f,.19f);
             camera.AddComponent<AudioListener>();camera.AddComponent<CameraRig>();
@@ -310,6 +310,7 @@ namespace ElevatorGame.Editor
             if(kind==9){var collider=root.AddComponent<BoxCollider>();collider.size=new Vector3(.28f,.3f,.65f);root.AddComponent<WeaponPickup>().visualMaterial=gold;}
             if(kind==10){Shape("Projectile shell",PrimitiveType.Sphere,t,Vector3.zero,Vector3.one*.25f,coral,true,10);root.AddComponent<WeaponProjectile>();}
             var rb=Rigid(root,kind==15?175:kind==12?240:kind==11?13:kind>=9?8:kind==0?180:kind==1?45:kind==3?100:kind==4?50:kind==8?85:70);rb.angularDamping=kind==0?.08f:2;
+            if(kind==8)rb.centerOfMass=new Vector3(0,-.55f,0);
             Network(root);var prop=root.AddComponent<NetworkProp>();prop.impactBoost=kind==15?1.5f:kind==13?1.1f:kind==12?1.1f:kind==11?.75f:kind==0?1.2f:kind==1?1:kind==9?.8f:0;
             if(kind==11){var animator=root.AddComponent<FishAnimator>();animator.tail=tail;animator.leftFin=fishLeftFin;animator.rightFin=fishRightFin;}
             if(kind==14){var animator=root.AddComponent<SaucerAnimator>();animator.lightRing=saucerRing;animator.beam=beamRenderer;}
