@@ -28,10 +28,14 @@ namespace ElevatorGame.Editor
             Check(r.Stage.Value==ElevatorStage.Moving&&r.Remaining>11,"Travel gives twelve seconds for weapon combat");
             Check(UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==1,"One weapon spawned on floor one");
             var initial=UnityEngine.Object.FindFirstObjectByType<WeaponPickup>();
+            Check(WeaponSystem.IsRanged((WeaponKind)initial.Kind.Value),"First floor awards a ranged weapon");
             for(int i=0;i<2;i++){r.NextFloor();yield return .1;}
             Check(initial&&UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==3,"Weapon persists for three floors with one new weapon per floor");
+            Check(!WeaponSystem.IsRanged((WeaponKind)UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Single(w=>w.BornFloor.Value==2).Kind.Value)
+                &&WeaponSystem.IsRanged((WeaponKind)UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Single(w=>w.BornFloor.Value==3).Kind.Value),"Weapon categories alternate ranged, melee, ranged");
             r.NextFloor();yield return .1;
             Check(!initial&&UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==3,"Oldest weapon expires on fourth floor");
+            Check(!WeaponSystem.IsRanged((WeaponKind)UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Single(w=>w.BornFloor.Value==4).Kind.Value),"Fourth floor awards a melee weapon");
             var weapons=r.GetComponent<WeaponSystem>();weapons.ResetAll();yield return .1;
             foreach(var p in players)p.ResetForRound(new Vector3(10+p.Slot.Value*2,1,10));
             human.ResetForRound(new Vector3(0,1.15f,0));victim.ResetForRound(new Vector3(0,1.15f,1.8f));

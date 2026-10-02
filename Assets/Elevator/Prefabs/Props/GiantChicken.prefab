@@ -630,7 +630,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ElevatorGame.NetworkProp
   ShowTopMostFoldoutHeaderGroup: 1
   persistent: 0
-  impactBoost: 0
+  impactBoost: 1.1
 --- !u!114 &6436940532685620592
 MonoBehaviour:
   m_ObjectHideFlags: 0

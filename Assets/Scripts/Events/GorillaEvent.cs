@@ -6,7 +6,7 @@ namespace ElevatorGame
     {
         NetworkProp gorilla;
         PlayerController victim;
-        float nextStrike=1,windupUntil,lastStrikeAt;
+        float nextStrike=1,windupUntil,lastStrikeAt,retargetAt;
         int lastVictimSlot=-1;
         bool windingUp;
         public int Strikes {get;private set;}
@@ -31,7 +31,8 @@ namespace ElevatorGame
                 return;
             }
             if(gorilla.Action.Value==7&&Elapsed-lastStrikeAt>.35f)gorilla.Animate(5);
-            if(!victim||!victim.Alive.Value||Elapsed>=nextStrike)victim=ChooseVictim();
+            if(!victim||!victim.Alive.Value||Elapsed>=retargetAt)
+            {victim=ChooseVictim();retargetAt=Elapsed+1.4f;}
             Vector3 destination=victim?victim.Body.position:new Vector3(0,1,0);
             Vector3 direction=destination-gorilla.Body.position;direction.y=0;
             Vector3 horizontal=new(gorilla.Body.linearVelocity.x,0,gorilla.Body.linearVelocity.z);
@@ -45,18 +46,8 @@ namespace ElevatorGame
 
         PlayerController ChooseVictim()
         {
-            PlayerController preferred=null,fallback=null;
-            float preferredDistance=float.MaxValue,fallbackDistance=float.MaxValue;
-            foreach(var player in RoundManager.Players())
-            {
-                if(!player.Alive.Value)continue;
-                float distance=Vector3.Distance(player.Body.position,gorilla.Body.position);
-                if(distance<fallbackDistance){fallback=player;fallbackDistance=distance;}
-                if(player.Slot.Value!=lastVictimSlot&&distance<preferredDistance)
-                {preferred=player;preferredDistance=distance;}
-            }
-            // Once inside, alternate targets while keeping every swing reachable.
-            return preferred&&preferredDistance<7?preferred:fallback;
+            // Randomly choose a living passenger, preferring someone other than the last victim.
+            return RandomLiving(gorilla.Body.position,40,lastVictimSlot)??RandomLiving(gorilla.Body.position);
         }
 
         void Strike()
@@ -82,7 +73,7 @@ namespace ElevatorGame
             if(victim)lastVictimSlot=victim.Slot.Value;
             RoundManager.Instance.PlayCue("slam");
             RoundManager.Instance.WeaponEffect(center+Vector3.up*.6f,center+toward*2.3f,103);
-            victim=null;
+            victim=null;retargetAt=Elapsed;
         }
     }
 }

@@ -335,7 +335,7 @@ namespace ElevatorGame.Editor
             if(kind==10){Shape("Projectile shell",PrimitiveType.Sphere,t,Vector3.zero,Vector3.one*.25f,coral,true,10);root.AddComponent<WeaponProjectile>();}
             var rb=Rigid(root,kind==16?220:kind==17?.35f:kind==15?175:kind==12?240:kind==11?13:kind>=9?8:kind==0?180:kind==1?45:kind==3?100:kind==4?50:kind==8?85:70);rb.angularDamping=kind==0?.08f:2;
             if(kind==8)rb.centerOfMass=new Vector3(0,-.55f,0);
-            Network(root);var prop=root.AddComponent<NetworkProp>();prop.impactBoost=kind==15?1.5f:kind==13?1.1f:kind==12?1.1f:kind==11?.75f:kind==0?1.2f:kind==1?1:kind==9?.8f:0;
+            Network(root);var prop=root.AddComponent<NetworkProp>();prop.impactBoost=kind==15?1.5f:kind==13?1.1f:kind==12?1.1f:kind==11?1.15f:kind==4?1.1f:kind==8?1.1f:kind==0?1.2f:kind==1?1:kind==9?.8f:0;
             if(kind==17)root.AddComponent<HwachaArrow>();
             if(kind==11){var animator=root.AddComponent<FishAnimator>();animator.tail=tail;animator.leftFin=fishLeftFin;animator.rightFin=fishRightFin;}
             if(kind==14){var animator=root.AddComponent<SaucerAnimator>();animator.lightRing=saucerRing;animator.beam=beamRenderer;}

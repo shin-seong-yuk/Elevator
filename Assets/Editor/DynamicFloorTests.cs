@@ -56,13 +56,17 @@ namespace ElevatorGame.Editor
             var water=Props(6).Single().GetComponentInChildren<Renderer>();
             Check(water.bounds.size.x>9.3f&&water.bounds.size.z>9.3f,"Flood surface covers the widened cabin");
             round.events.Cleanup(true);yield return .15;
+            human.ResetForRound(new Vector3(4.1f,1.15f,0));
+            round.events.Force(EventKind.Wind);round.events.Prepare(8);round.events.Begin();yield return .4;
+            Check(human.Body.linearVelocity.z>1.5f,"Wind pushes a passenger standing near the widened side wall");
+            round.events.Cleanup(true);yield return .15;
             var players=RoundManager.Players();
             foreach(var p in players){p.ResetForRound(RoundManager.SpawnPoint(p.Slot.Value));if(p.AI)p.AI.enabled=false;if(p!=human&&p!=players[1])p.Alive.Value=false;}
             human.ResetForRound(new Vector3(0,1.2f,-1));players[1].ResetForRound(new Vector3(4,1.2f,-3.8f));
             round.events.Force(EventKind.Dinosaur);round.events.Prepare(8);round.events.Begin();
             var dino=UnityEngine.Object.FindFirstObjectByType<DinosaurEvent>();
             yield return 7.5;
-            Check(dino.SweepsStarted>=2&&dino.HasHit(human)&&!dino.HasHit(players[1]),"Moving dinosaur repeatedly sweeps its tail while dodger stays clear");
+            Check(dino.SweepsStarted>=2&&(dino.HasHit(human)||dino.HasHit(players[1])),"Moving dinosaur repeatedly sweeps its tail toward living passengers");
             Check(Props(2).Single().GetComponents<SpringJoint>().Length==0,"Dinosaur never bites or attaches a player");
             round.events.Cleanup(true);yield return .15;
             human.ResetForRound(new Vector3(0,1.2f,1));players[1].ResetForRound(new Vector3(1.2f,1.2f,.5f));
@@ -88,8 +92,14 @@ namespace ElevatorGame.Editor
             Check(Props(11).Length==10,"Ten separate colliding fish spawn");
             yield return 3.7;
             Check(Props(11).Any(p=>p.Body.position.z<2),"Flopping fish leap through elevator doorway (closest="+Props(11).Min(p=>p.Body.position.z)+", height="+Props(11).Min(p=>p.Body.position.y)+", speed="+Props(11).Max(p=>p.Body.linearVelocity.magnitude)+")");
+            var fishEvent=UnityEngine.Object.FindFirstObjectByType<FlyingFishEvent>();int fishFlaps=fishEvent.Flaps;
+            yield return 1.5;Check(fishEvent.Flaps>fishFlaps+10,"Fish keep flapping and chasing throughout the floor");
             round.events.Cleanup(true);yield return .15;
             Check(Props(11).Length==0,"Fish clean up at floor end");
+            round.events.Force(EventKind.Chicken);round.events.Prepare(8);round.events.Begin();yield return 2;
+            var chickenEvent=UnityEngine.Object.FindFirstObjectByType<ChickenEvent>();int chickenFlaps=chickenEvent.Flaps;
+            yield return 1.5;Check(chickenEvent.Flaps>chickenFlaps+5&&Props(4).Length==6,"Chickens keep flapping and chasing throughout the floor");
+            round.events.Cleanup(true);yield return .15;
             round.events.Force(EventKind.Tank);round.events.Prepare(8);round.events.Begin();yield return 2.6;
             Check(Props(12).Length==1&&Props(12)[0].Action.Value>=1,"Tank drives up and fires a physical shell");
             Check(Props(13).Length>0||CombatFeedback.ImpactCount>0,"Shell exists or has exploded with feedback");

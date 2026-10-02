@@ -38,7 +38,7 @@ namespace ElevatorGame
         {
             int column=shot%10,row=(shot/10)%5;
             Vector3 muzzle=hwacha.Body.position+new Vector3((column-4.5f)*.21f,.75f+(row-2)*.17f,-.9f);
-            var player=shot%3==0?Nearest(new Vector3(0,1,0),12):null;
+            var player=shot%3==0?RandomLiving(new Vector3(0,1,0)):null;
             Vector3 target=player&&player.Alive.Value
                 ?player.Body.position+new Vector3(Manager.Random(-.3f,.3f),Manager.Random(-.1f,.5f),Manager.Random(-.35f,.35f))
                 :new Vector3(Manager.Random(-3.5f,3.5f),Manager.Random(.6f,2.1f),Manager.Random(-2.5f,1.7f));

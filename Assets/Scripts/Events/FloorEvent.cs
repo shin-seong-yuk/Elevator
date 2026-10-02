@@ -52,6 +52,17 @@ namespace ElevatorGame
             }
             return chosen;
         }
+        protected PlayerController RandomLiving(Vector3 point, float range = 40, int excludeSlot = -1)
+        {
+            int count=0;
+            foreach(var player in RoundManager.Players())
+                if(player.Alive.Value&&player.Slot.Value!=excludeSlot&&Vector3.Distance(point,player.Body.position)<=range)count++;
+            if(count==0)return null;
+            int choice=Manager.RandomInt(0,count);
+            foreach(var player in RoundManager.Players())
+                if(player.Alive.Value&&player.Slot.Value!=excludeSlot&&Vector3.Distance(point,player.Body.position)<=range&&choice--==0)return player;
+            return null;
+        }
         protected void Blast(Vector3 center, float radius, Vector3 force)
         {
             foreach (var p in RoundManager.Players()) if (p.Alive.Value && Vector3.Distance(center, p.transform.position) < radius) p.Knock(force * Power);

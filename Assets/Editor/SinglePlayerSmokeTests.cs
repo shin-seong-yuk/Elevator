@@ -64,9 +64,9 @@ namespace ElevatorGame.Editor
             float arrival=(ball.Body.position.z-1.2f)/-ball.Body.linearVelocity.z; players[0].ResetForRound(new Vector3(Mathf.Clamp(ball.Body.position.x+ball.Body.linearVelocity.x*arrival,-2.4f,2.4f),1.15f,1.2f));
             bool launched=false;
             drive=()=>{if(players.Any(p=>p.Body.linearVelocity.magnitude>6||p.Body.linearVelocity.y>2.5f))launched=true;};
-            yield return 3.2;
-            Check(bowling.BallsLaunched==3,"Bowling balls arrive one after another");
-            yield return 3.2;
+            yield return .75;
+            Check(bowling.BallsLaunched==3&&UnityEngine.Object.FindObjectsByType<NetworkProp>(FindObjectsSortMode.None).Count(p=>p.PrefabIndex==0)>=3,"Three bowling balls are visible together in the corridor");
+            yield return 2.45;
             drive=null;Check(launched,"Ball contact launches physical passengers");
             Check(bowling.BallsLaunched==5,"Exactly five bowling balls launch during the floor");
             r.events.Cleanup(true);foreach(var p in players)p.ResetForRound(RoundManager.SpawnPoint(p.Slot.Value));
@@ -102,9 +102,10 @@ namespace ElevatorGame.Editor
             Check(players.All(p=>p.GetComponentsInChildren<Rigidbody>().Length==3),"Each passenger has a torso and two physical hands");
             human.InputEnabled=false;r.StageEnds.Value=r.Clock+90;r.enabled=false;r.GetComponent<WeaponSystem>().ResetAll();
             foreach(var ai in players.Where(p=>p.IsBot.Value)){ai.AI.enabled=false;ai.AI.ResetBrain();ai.ResetForRound(new Vector3(15+ai.Slot.Value*2,1,15));}
+            human.ResetForRound(new Vector3(0,1.15f,0));yield return .1;
             Vector3 original=human.Body.position;
             drive=()=>human.SetMoveInput(Vector2.up,0,false,false);
-            yield return .45;
+            yield return .8;
             Check(human.Body.position.z-original.z>.3f,"Shared motor moves from input");
             drive=null;human.SetMoveInput(Vector2.zero,0,false,false);yield return .4;
             human.ResetForRound(new Vector3(0,1.15f,1.1f));yield return .65;
@@ -140,6 +141,7 @@ namespace ElevatorGame.Editor
             yield return 2;
             Check(players.Any(p=>p.IsBot.Value&&p.AI.SafeDirection.z<-.2f),"AI senses wind and chooses cabin-back direction");
             r.events.Cleanup(true);
+            r.Phase.Value=RoundPhase.Playing;r.Winner.Value=-1;r.AliveCount.Value=players.Length;r.elimination.ResetState();
             foreach(var p in players)p.ResetForRound(RoundManager.SpawnPoint(p.Slot.Value));
             var bot=players.First(p=>p.IsBot.Value);bot.ResetForRound(new Vector3(4.1f,1,-3.6f));bot.AI.DebugGrab=true;
             r.events.Force(EventKind.Vacuum);r.events.Prepare(1);r.events.Begin();

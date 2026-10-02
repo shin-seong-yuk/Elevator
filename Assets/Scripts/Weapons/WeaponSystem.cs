@@ -4,6 +4,9 @@ namespace ElevatorGame
 {
     public sealed class WeaponSystem : MonoBehaviour
     {
+        static readonly WeaponKind[] ranged={WeaponKind.Pistol,WeaponKind.Shotgun,WeaponKind.Bazooka,WeaponKind.GrenadeLauncher,WeaponKind.Blower,WeaponKind.Grappler};
+        static readonly WeaponKind[] melee={WeaponKind.Bat,WeaponKind.Hammer,WeaponKind.BoxingGlove,WeaponKind.ShockStaff};
+        public static bool IsRanged(WeaponKind kind)=>System.Array.IndexOf(ranged,kind)>=0;
         readonly Dictionary<int,float> useAt=new(),interactAt=new();
         static WeaponSystem Instance=>RoundManager.Instance?RoundManager.Instance.GetComponent<WeaponSystem>():null;
         public static WeaponPickup Held(PlayerController p){foreach(var w in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))if(w.Prop.IsActive&&w.Holder.Value==p.Slot.Value)return w;return null;}
@@ -15,7 +18,8 @@ namespace ElevatorGame
             foreach(var w in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))if(floor-w.BornFloor.Value>=3)w.Prop.Remove();
             var r=RoundManager.Instance;
             var prop=r.events.SpawnProp(9,new Vector3(r.events.Random(-1.5f,1.5f),1.6f,r.events.Random(-.7f,1.4f)),Vector3.zero,true);
-            var weapon=prop.GetComponent<WeaponPickup>();weapon.Kind.Value=r.events.RandomInt(0,10);weapon.BornFloor.Value=floor;
+            var weapon=prop.GetComponent<WeaponPickup>();var pool=floor%2==1?ranged:melee;
+            weapon.Kind.Value=(int)pool[r.events.RandomInt(0,pool.Length)];weapon.BornFloor.Value=floor;
         }
         public static void PickupOrThrow(PlayerController p)
         {

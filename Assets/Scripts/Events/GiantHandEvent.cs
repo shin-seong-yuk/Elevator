@@ -5,6 +5,7 @@ namespace ElevatorGame
     {
         readonly NetworkProp[] hands=new NetworkProp[3];readonly FixedJoint[] holds=new FixedJoint[3];
         readonly float[] next=new float[3],releaseAt=new float[3];readonly bool[] pulling=new bool[3];
+        readonly PlayerController[] targets=new PlayerController[3];
         public override void StartEvent()
         {
             base.StartEvent();for(int i=0;i<3;i++){hands[i]=Spawn(5,new Vector3((i-1)*2.8f,2.2f,6+i),Vector3.zero);hands[i].Body.isKinematic=true;next[i]=1+i*.65f;}
@@ -17,9 +18,11 @@ namespace ElevatorGame
                 if(pulling[i])
                 {
                     hand.Body.MovePosition(Vector3.MoveTowards(hand.Body.position,new Vector3((i-1)*2.8f,2.7f,8),Time.fixedDeltaTime*5.5f));
-                    if(!holds[i]||Elapsed>releaseAt[i]){if(holds[i])Destroy(holds[i]);pulling[i]=false;next[i]=Elapsed+1.3f;}continue;
+                    if(!holds[i]||Elapsed>releaseAt[i]){if(holds[i])Destroy(holds[i]);pulling[i]=false;targets[i]=null;next[i]=Elapsed+1.3f;}continue;
                 }
-                if(Elapsed<next[i])continue;var victim=Nearest(hand.Body.position);if(!victim)continue;
+                if(Elapsed<next[i])continue;
+                if(!targets[i]||!targets[i].Alive.Value)targets[i]=RandomLiving(hand.Body.position);
+                var victim=targets[i];if(!victim)continue;
                 hand.Body.MovePosition(Vector3.MoveTowards(hand.Body.position,victim.Body.position+Vector3.up*.3f,Time.fixedDeltaTime*6.2f));
                 if(Vector3.Distance(hand.Body.position,victim.Body.position)<1.3f)
                 {

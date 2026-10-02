@@ -7,6 +7,7 @@ namespace ElevatorGame
         public bool stabilize;
         NetworkProp prop;
         Transform gorillaLeftArm,gorillaRightArm;
+        Transform chickenLeftWing,chickenRightWing;
         void Awake()
         {
             prop=GetComponent<NetworkProp>();
@@ -15,6 +16,11 @@ namespace ElevatorGame
                 {
                     if(part.localPosition.x<0)gorillaLeftArm=part;
                     else gorillaRightArm=part;
+                }
+                else if(part.name=="Wing")
+                {
+                    if(part.localPosition.x<0)chickenLeftWing=part;
+                    else chickenRightWing=part;
                 }
         }
         void FixedUpdate()
@@ -44,6 +50,12 @@ namespace ElevatorGame
                     prop.Action.Value==7?1-Mathf.SmoothStep(0,1,Mathf.Clamp01(t/.32f)):0;
                 if(gorillaLeftArm){gorillaLeftArm.localPosition=new Vector3(-.83f,-.15f+lift*.7f,0);gorillaLeftArm.localRotation=Quaternion.Euler(0,0,-lift*68);}
                 if(gorillaRightArm){gorillaRightArm.localPosition=new Vector3(.83f,-.15f+lift*.7f,0);gorillaRightArm.localRotation=Quaternion.Euler(0,0,lift*68);}
+            }
+            if(prop.PrefabIndex==4)
+            {
+                float flap=Mathf.Sin(now*22)*55;
+                if(chickenLeftWing)chickenLeftWing.localRotation=Quaternion.Euler(0,0,-flap);
+                if(chickenRightWing)chickenRightWing.localRotation=Quaternion.Euler(0,0,flap);
             }
         }
     }

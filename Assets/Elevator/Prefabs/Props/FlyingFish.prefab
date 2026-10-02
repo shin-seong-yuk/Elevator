@@ -551,7 +551,7 @@ MonoBehaviour:
   PrefabIndex: -1
   MigrationKey: -1
   persistent: 0
-  impactBoost: 0.75
+  impactBoost: 1.15
 --- !u!114 &7057021316177276219
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -11,10 +11,10 @@ namespace ElevatorGame
         {
             if(!prop||!prop.IsActive||!RoundManager.Instance)return;
             float t=(float)RoundManager.Instance.Clock;
-            float speed=prop.Action.Value>0?25:15;
-            if(tail)tail.localRotation=Quaternion.Euler(0,Mathf.Sin(t*speed)*42,0);
-            if(leftFin)leftFin.localRotation=Quaternion.Euler(0,0,Mathf.Sin(t*speed+1)*32);
-            if(rightFin)rightFin.localRotation=Quaternion.Euler(0,0,-Mathf.Sin(t*speed+1)*32);
+            float speed=prop.Action.Value>0?32:21;
+            if(tail)tail.localRotation=Quaternion.Euler(0,Mathf.Sin(t*speed)*68,0);
+            if(leftFin)leftFin.localRotation=Quaternion.Euler(0,0,Mathf.Sin(t*speed+1)*55);
+            if(rightFin)rightFin.localRotation=Quaternion.Euler(0,0,-Mathf.Sin(t*speed+1)*55);
         }
     }
 }

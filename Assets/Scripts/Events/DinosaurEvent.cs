@@ -8,6 +8,8 @@ namespace ElevatorGame
         NetworkProp dinosaur;
         float nextSweep,tailStart;
         bool arrived,sweeping;
+        PlayerController victim;
+        float retargetAt;
         Vector3 previousTailTip;
         readonly List<PlayerController> tailHits=new();
         [System.NonSerialized] readonly HashSet<PlayerController> allHits=new();
@@ -47,9 +49,13 @@ namespace ElevatorGame
 
         void MoveTowardPlayers(float speed)
         {
-            var player=Nearest(dinosaur.Body.position,15);
-            Vector3 target=player&&player.Alive.Value
-                ?new Vector3(Mathf.Clamp(player.Body.position.x,-2.8f,2.8f),1.55f,Mathf.Clamp(player.Body.position.z+1.35f,-1.25f,2.35f))
+            if(!victim||!victim.Alive.Value||Elapsed>=retargetAt)
+            {
+                victim=RandomLiving(dinosaur.Body.position);
+                retargetAt=Elapsed+Manager.Random(1.6f,2.5f);
+            }
+            Vector3 target=victim
+                ?new Vector3(Mathf.Clamp(victim.Body.position.x,-3.5f,3.5f),1.55f,Mathf.Clamp(victim.Body.position.z+1.35f,-2.25f,2.35f))
                 :new Vector3(Mathf.Sin(Elapsed)*1.5f,1.55f,.65f);
             dinosaur.Body.MovePosition(Vector3.MoveTowards(dinosaur.Body.position,target,Time.fixedDeltaTime*speed));
         }
