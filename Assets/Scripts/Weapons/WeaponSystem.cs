@@ -12,7 +12,7 @@ namespace ElevatorGame
         public void RestoreCooldowns(int[] slots,float[] times){useAt.Clear();interactAt.Clear();for(int i=0;i<slots.Length;i++)useAt[slots[i]]=Time.time+times[i];}
         public void OnFloor(int floor)
         {
-            foreach(var w in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))if(floor-w.BornFloor.Value>=4)w.Prop.Remove();
+            foreach(var w in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))if(floor-w.BornFloor.Value>=3)w.Prop.Remove();
             var r=RoundManager.Instance;
             var prop=r.events.SpawnProp(9,new Vector3(r.events.Random(-1.5f,1.5f),1.6f,r.events.Random(-.7f,1.4f)),Vector3.zero,true);
             var weapon=prop.GetComponent<WeaponPickup>();weapon.Kind.Value=r.events.RandomInt(0,10);weapon.BornFloor.Value=floor;
@@ -29,7 +29,7 @@ namespace ElevatorGame
                 if(!w.Prop.IsActive||w.Holder.Value>=0)continue;float d=Vector3.Distance(p.Body.position,w.transform.position);
                 if(d<distance){distance=d;nearest=w;}
             }
-            if(nearest){nearest.Holder.Value=slot;nearest.Prop.Body.linearVelocity=Vector3.zero;nearest.Prop.Body.angularVelocity=Vector3.zero;p.PlaySound("grab");}
+            if(nearest){nearest.ClearThrow();nearest.Holder.Value=slot;nearest.Prop.Body.linearVelocity=Vector3.zero;nearest.Prop.Body.angularVelocity=Vector3.zero;p.PlaySound("grab");}
         }
         public static void Drop(PlayerController p,bool thrown)
         {
@@ -45,12 +45,14 @@ namespace ElevatorGame
             w.Prop.Body.linearVelocity=velocity;
             w.Prop.Body.angularVelocity=thrown?p.transform.right*12:Vector3.zero;
             foreach(var c in w.GetComponents<Collider>())c.enabled=true;
-            if(thrown)p.PlaySound("throw");
+            if(thrown){w.ArmThrow(p.Slot.Value);p.PlaySound("throw");}
+            else w.ClearThrow();
         }
         public static void Disarm(PlayerController p,Vector3 impactVelocity)
         {
             if(!p.IsAuthority)return;
             var w=Held(p);if(!w)return;
+            w.ClearThrow();
             w.Holder.Value=-1;
             w.Prop.Body.isKinematic=false;
             w.Prop.Body.position=p.Grab.WeaponHandPosition+impactVelocity.normalized*.25f;

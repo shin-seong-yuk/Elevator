@@ -1,5 +1,6 @@
 ﻿using Unity.Netcode;
 using UnityEngine;
+using System.Collections.Generic;
 namespace ElevatorGame
 {
     public enum WeaponKind { Bat, Hammer, Pistol, Shotgun, Bazooka, GrenadeLauncher, BoxingGlove, ShockStaff, Blower, Grappler }
@@ -33,8 +34,24 @@ namespace ElevatorGame
         public Material visualMaterial;
         public NetworkProp Prop {get;private set;}
         int painted=-1; GameObject model;
+        float thrownUntil;int throwerSlot=-1;
+        readonly HashSet<int> throwHits=new();
+        public bool ActiveThrow=>Time.time<thrownUntil;
+        public void ArmThrow(int slot){throwerSlot=slot;thrownUntil=Time.time+1.8f;throwHits.Clear();}
+        public void ClearThrow(){thrownUntil=0;throwerSlot=-1;throwHits.Clear();}
         public string DisplayName=>((WeaponKind)Kind.Value).ToString();
         void Awake(){Prop=GetComponent<NetworkProp>();}
+        void OnCollisionEnter(Collision collision)
+        {
+            if(!Prop.IsAuthority||!ActiveThrow||collision.relativeVelocity.magnitude<3)return;
+            var target=collision.collider.GetComponentInParent<PlayerController>();
+            if(!target||!target.Alive.Value||target.Slot.Value==throwerSlot||!throwHits.Add(target.Slot.Value))return;
+            Vector3 direction=Prop.Body.linearVelocity.normalized;
+            if(direction.sqrMagnitude<.01f)direction=(target.Body.position-Prop.Body.position).normalized;
+            WeaponSystem.Disarm(target,direction*10);
+            target.Knock(direction*5+Vector3.up*2,.45f);
+            target.PlaySound("hit");
+        }
         void FixedUpdate()
         {
             if(!Prop.IsActive)return;

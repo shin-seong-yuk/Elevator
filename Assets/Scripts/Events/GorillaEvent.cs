@@ -1,38 +1,88 @@
-﻿using UnityEngine;
+using UnityEngine;
+
 namespace ElevatorGame
 {
     public sealed class GorillaEvent : FloorEvent
     {
-        NetworkProp gorilla; PlayerController victim; SpringJoint hold; float next=1,release;
-        public override void StartEvent() { base.StartEvent(); gorilla=Spawn(3,new Vector3(0,1.4f,16f),Vector3.back*5); }
+        NetworkProp gorilla;
+        PlayerController victim;
+        float nextStrike=1,windupUntil,lastStrikeAt;
+        int lastVictimSlot=-1;
+        bool windingUp;
+        public int Strikes {get;private set;}
+        public int LastVictimSlot=>lastVictimSlot;
+
+        public override void StartEvent()
+        {
+            base.StartEvent();
+            gorilla=Spawn(3,new Vector3(0,1.4f,16),Vector3.back*5);
+            gorilla.Animate(5);
+            RoundManager.Instance.PlayCue("runner");
+        }
+
+        public override float GetDangerStrength()=>Running?(windingUp?2.1f:1.2f)*Power:0;
+
         public override void UpdateEvent()
         {
-            if (!gorilla) return;
-            if (hold)
+            if(!gorilla)return;
+            if(windingUp)
             {
-                gorilla.Body.AddForce(new Vector3(Mathf.Sin(Elapsed*18)*7,3,0),ForceMode.Acceleration);
-                if(Elapsed>release)
-                {
-                    Destroy(hold); hold=null;
-                    if(victim) victim.Knock(new Vector3(Manager.Random(-6,6),5,Manager.Random(-2,10))*Power);
-                    next=Elapsed+2;
-                }
+                if(Elapsed>=windupUntil)Strike();
                 return;
             }
-            if(Elapsed<next)return;
-            victim=Nearest(gorilla.transform.position);
-            if(!victim)return;
-            Vector3 direction=victim.transform.position-gorilla.transform.position; direction.y=0;
-            gorilla.Body.AddForce(direction.normalized*12,ForceMode.Acceleration);
-            if(direction.magnitude<1.6f)
-            {
-                hold=gorilla.gameObject.AddComponent<SpringJoint>(); hold.connectedBody=victim.Body; hold.spring=1600; hold.damper=90; hold.maxDistance=.5f; hold.breakForce=2500;
-                release=Elapsed+1.4f; RoundManager.Instance.PlayCue("roar");
-            }
+            if(gorilla.Action.Value==7&&Elapsed-lastStrikeAt>.35f)gorilla.Animate(5);
+            if(!victim||!victim.Alive.Value||Elapsed>=nextStrike)victim=ChooseVictim();
+            Vector3 destination=victim?victim.Body.position:new Vector3(0,1,0);
+            Vector3 direction=destination-gorilla.Body.position;direction.y=0;
+            Vector3 horizontal=new(gorilla.Body.linearVelocity.x,0,gorilla.Body.linearVelocity.z);
+            gorilla.Body.AddForce(Vector3.ClampMagnitude(direction.normalized*9-horizontal,14)*4,ForceMode.Acceleration);
+            if(!victim||Elapsed<nextStrike||direction.magnitude>2.65f)return;
+            windingUp=true;
+            windupUntil=Elapsed+.42f;
+            gorilla.Animate(6);
+            RoundManager.Instance.PlayCue("warning");
         }
-        public override void EndEvent(){if(hold)Destroy(hold);base.EndEvent();}
+
+        PlayerController ChooseVictim()
+        {
+            PlayerController preferred=null,fallback=null;
+            float preferredDistance=float.MaxValue,fallbackDistance=float.MaxValue;
+            foreach(var player in RoundManager.Players())
+            {
+                if(!player.Alive.Value)continue;
+                float distance=Vector3.Distance(player.Body.position,gorilla.Body.position);
+                if(distance<fallbackDistance){fallback=player;fallbackDistance=distance;}
+                if(player.Slot.Value!=lastVictimSlot&&distance<preferredDistance)
+                {preferred=player;preferredDistance=distance;}
+            }
+            // Once inside, alternate targets while keeping every swing reachable.
+            return preferred&&preferredDistance<7?preferred:fallback;
+        }
+
+        void Strike()
+        {
+            windingUp=false;
+            nextStrike=Elapsed+1.65f;
+            lastStrikeAt=Elapsed;
+            Strikes++;
+            gorilla.Animate(7);
+            Vector3 center=gorilla.Body.position;
+            Vector3 toward=victim&&victim.Alive.Value?victim.Body.position-center:Vector3.back;
+            toward.y=0;
+            if(toward.sqrMagnitude<.01f)toward=Vector3.back;
+            toward.Normalize();
+            foreach(var player in RoundManager.Players())
+            {
+                if(!player.Alive.Value)continue;
+                Vector3 offset=player.Body.position-center;offset.y=0;
+                if(offset.magnitude>2.9f||Vector3.Dot(offset.normalized,toward)<.15f)continue;
+                player.Knock((offset.normalized*12+Vector3.up*4)*Power,.9f);
+                lastVictimSlot=player.Slot.Value;
+            }
+            if(victim)lastVictimSlot=victim.Slot.Value;
+            RoundManager.Instance.PlayCue("slam");
+            RoundManager.Instance.WeaponEffect(center+Vector3.up*.6f,center+toward*2.3f,103);
+            victim=null;
+        }
     }
 }
-
-
-

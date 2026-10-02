@@ -21,8 +21,9 @@ namespace ElevatorGame
     }
     [Serializable] public sealed class MigrationProp
     {
-        public int key,prefab,action,weapon=-1,holder=-1,born,ammo=-2;public bool persistent;
+        public int key,prefab,action,weapon=-1,holder=-1,born,ammo=-2,arrowSlot=-1;public bool persistent;
         public float actionAge,projectileTime;public int projectileMode;public MigrationBody body;
+        public Vector3 arrowLocalPosition;public Quaternion arrowLocalRotation;
     }
     [Serializable] public sealed class MigrationValue
     {
@@ -61,7 +62,7 @@ namespace ElevatorGame
             var props=UnityEngine.Object.FindObjectsByType<NetworkProp>(FindObjectsSortMode.InstanceID).Where(p=>p.IsActive).ToArray();
             var context=new MigrationContext(props);
             snapshot.players=RoundManager.Players().Select(p=>new MigrationPlayer{slot=p.Slot.Value,steam=p.SteamId.Value,bot=p.IsBot.Value,alive=p.Alive.Value,ready=p.Ready.Value,body=MigrationBody.Read(p.Body),left=MigrationBody.Read(p.Grab.leftHand.GetComponent<Rigidbody>()),right=MigrationBody.Read(p.Grab.rightHand.GetComponent<Rigidbody>()),grip=p.Grab.GripStrength,release=p.Grab.ReleaseRemaining,impact=p.Grab.ImpactRemaining,stun=p.StunRemaining,aim=p.AimDirection,grips=p.Grab.CaptureGrips(context)}).ToArray();
-            snapshot.props=props.Select((p,i)=>{var w=p.GetComponent<WeaponPickup>();var projectile=p.GetComponent<WeaponProjectile>();return new MigrationProp{key=p.MigrationKey,prefab=p.PrefabIndex,persistent=p.persistent,body=MigrationBody.Read(p.Body),action=p.Action.Value,actionAge=(float)(r.Clock-p.ActionAt.Value),weapon=w?w.Kind.Value:-1,holder=w?w.Holder.Value:-1,born=w?w.BornFloor.Value:0,ammo=w?w.RemainingAmmo:-2,projectileMode=projectile?projectile.MigrationMode:0,projectileTime=projectile?projectile.MigrationRemaining:0};}).ToArray();
+            snapshot.props=props.Select((p,i)=>{var w=p.GetComponent<WeaponPickup>();var projectile=p.GetComponent<WeaponProjectile>();var arrow=p.GetComponent<HwachaArrow>();return new MigrationProp{key=p.MigrationKey,prefab=p.PrefabIndex,persistent=p.persistent,body=MigrationBody.Read(p.Body),action=p.Action.Value,actionAge=(float)(r.Clock-p.ActionAt.Value),weapon=w?w.Kind.Value:-1,holder=w?w.Holder.Value:-1,born=w?w.BornFloor.Value:0,ammo=w?w.RemainingAmmo:-2,projectileMode=projectile?projectile.MigrationMode:0,projectileTime=projectile?projectile.MigrationRemaining:0,arrowSlot=arrow?arrow.StuckSlot.Value:-1,arrowLocalPosition=arrow?arrow.LocalPosition.Value:Vector3.zero,arrowLocalRotation=arrow?arrow.LocalRotation.Value:Quaternion.identity};}).ToArray();
             snapshot.joints=context.CaptureJoints();snapshot.events=r.events.CaptureMigration(context);
             snapshot.randomSeed=r.events.RandomSeed;snapshot.randomCalls=r.events.RandomCalls;snapshot.previousEvent=(int)r.events.PreviousEvent;
             snapshot.panelHealth=new float[40];foreach(var p in UnityEngine.Object.FindObjectsByType<CabinPanel>(FindObjectsSortMode.None))snapshot.panelHealth[p.index]=p.Health;
@@ -86,6 +87,7 @@ namespace ElevatorGame
                 var p=r.events.SpawnProp(saved.prefab,saved.body.position,Vector3.zero,saved.persistent);saved.body.Apply(p.Body);p.Action.Value=saved.action;p.ActionAt.Value=r.Clock-saved.actionAge;
                 var w=p.GetComponent<WeaponPickup>();if(w){w.Kind.Value=saved.weapon;w.BornFloor.Value=saved.born;w.RestoreAmmo(saved.ammo==-2?w.Capacity:saved.ammo);w.Holder.Value=RoundManager.Players().Any(a=>a.Slot.Value==saved.holder)?saved.holder:-1;if(w.Holder.Value<0)p.Body.isKinematic=false;}
                 var projectile=p.GetComponent<WeaponProjectile>();if(projectile)projectile.RestoreMigration(saved.projectileMode,saved.projectileTime);
+                var arrow=p.GetComponent<HwachaArrow>();if(arrow)arrow.RestoreStuck(saved.arrowSlot,saved.arrowLocalPosition,saved.arrowLocalRotation);
                 p.MigrationKey=saved.key;r.events.NextMigrationKey=Mathf.Max(r.events.NextMigrationKey,saved.key+1);restored[saved.key]=p;
             }
             var context=new MigrationContext(restored);context.RestoreJoints(joints);
@@ -149,7 +151,7 @@ namespace ElevatorGame
         }
         public MigrationValue Encode(object value,Type type)
         {
-            var v=new MigrationValue();if(value==null){v.kind="null";return v;}
+            var v=new MigrationValue();if(value==null||value is UnityEngine.Object unityObject&&!unityObject){v.kind="null";return v;}
             if(type==typeof(float)||type==typeof(int)||type==typeof(bool)){v.kind="number";v.number=Convert.ToSingle(value);}
             else if(type==typeof(Vector3)){v.kind="vector3";v.vector=(Vector3)value;}
             else if(typeof(UnityEngine.Object).IsAssignableFrom(type)){v.kind="reference";v.text=Reference(value as UnityEngine.Object);}
@@ -178,7 +180,7 @@ namespace ElevatorGame
         {
             for(Type type=e.GetType();type!=typeof(MonoBehaviour);type=type.BaseType)
                 foreach(var f in type.GetFields(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly))
-                    if(f.Name!="Manager"&&!f.Name.Contains("k__BackingField"))yield return f;
+                    if(f.Name!="Manager"&&!f.Name.Contains("k__BackingField")&&!f.IsNotSerialized)yield return f;
         }
     }
 }

@@ -39,7 +39,10 @@ namespace ElevatorGame.Editor
                 Check(UnityEngine.Object.FindObjectsByType<NetworkProp>(FindObjectsSortMode.None).Length==before.props.Length,"Event objects restored without extra spawning: "+kind);
                 Check(Mathf.Abs(r.events.Random(0,1)-nextRandom)<.00001f,"Event random sequence resumes: "+kind);
                 var after=MigrationSnapshot.Capture(13,4);
-                Check(JsonUtility.ToJson(new EventEnvelope{events=before.events})==JsonUtility.ToJson(new EventEnvelope{events=after.events}),"Event attack timers and object links preserved: "+kind);
+                string beforeEvents=JsonUtility.ToJson(new EventEnvelope{events=before.events});
+                string afterEvents=JsonUtility.ToJson(new EventEnvelope{events=after.events});
+                if(beforeEvents!=afterEvents){int mismatch=0;while(mismatch<Mathf.Min(beforeEvents.Length,afterEvents.Length)&&beforeEvents[mismatch]==afterEvents[mismatch])mismatch++;checks.Add("INFO "+kind+" mismatch at "+mismatch+" before="+beforeEvents.Substring(Mathf.Max(0,mismatch-70),Mathf.Min(160,beforeEvents.Length-Mathf.Max(0,mismatch-70)))+" after="+afterEvents.Substring(Mathf.Max(0,mismatch-70),Mathf.Min(160,afterEvents.Length-Mathf.Max(0,mismatch-70))));}
+                Check(beforeEvents==afterEvents,"Event attack timers and object links preserved: "+kind);
                 foreach(var p in RoundManager.Players()){p.InputEnabled=false;p.AI.enabled=false;p.AI.ResetBrain();}
                 yield return .2;
             }
@@ -50,6 +53,7 @@ namespace ElevatorGame.Editor
             actor.Grab.Attach(0,rail,rail.ClosestPoint(actor.Grab.leftHand.position));actor.Grab.ApplyImpact(300);
             all[1].Grab.Attach(1,actor.GetComponent<Collider>(),actor.Body.position);
             var w=r.events.SpawnProp(9,actor.Body.position+Vector3.forward*.4f,Vector3.zero,true).GetComponent<WeaponPickup>();w.Kind.Value=4;w.RestoreAmmo(1);w.BornFloor.Value=6;w.Holder.Value=actor.Slot.Value;
+            var embedded=r.events.SpawnProp(17,actor.Body.position+Vector3.up*.3f,Vector3.zero,true).GetComponent<HwachaArrow>();embedded.Stick(actor,actor.Body.position+Vector3.up*.3f,Quaternion.identity);
             r.Floor.Value=8;r.BrokenPanels.Value=(1UL<<3)|(1UL<<24);r.Stage.Value=ElevatorStage.Moving;r.StageEnds.Value=r.Clock+7.25f;
             r.RestoreDrop(-.25,1.1,true,false);
             var state=SteamSession.Unpack(SteamSession.Pack(MigrationSnapshot.Capture(20,3)));
@@ -60,7 +64,8 @@ namespace ElevatorGame.Editor
             Check(Mathf.Abs(actor.Grab.GripStrength-40)<.1f,"Hidden grip stamina preserved");
             Check(r.Floor.Value==8&&r.BrokenPanels.Value==state.broken&&Mathf.Abs(r.Remaining-7.25f)<.1f,"Floor, holes and remaining stage time preserved");
             Check(r.DropActive&&r.DropLaunched&&!r.DropLanded&&Mathf.Abs((float)(r.DropEnds.Value-r.Clock)-1.1f)<.1f,"Mid-drop timing and impact phase preserved");
-            var held=WeaponSystem.Held(actor);Check(held&&held.Kind.Value==4&&held.BornFloor.Value==6&&held.RemainingAmmo==1,"Weapon type, holder, remaining ammo and four-floor age preserved");
+            var held=WeaponSystem.Held(actor);Check(held&&held.Kind.Value==4&&held.BornFloor.Value==6&&held.RemainingAmmo==1,"Weapon type, holder, remaining ammo and birth floor preserved");
+            embedded=UnityEngine.Object.FindFirstObjectByType<HwachaArrow>();Check(embedded&&embedded.StuckSlot.Value==actor.Slot.Value&&Vector3.Distance(embedded.transform.position,actor.transform.TransformPoint(embedded.LocalPosition.Value))<.5f,"Embedded Hwacha arrow remains attached after migration");
             yield return .1;
             Check(actor.Grab.LeftHeld,"Restored grip survives the reconnect input grace period");
             var floor=UnityEngine.Object.FindObjectsByType<CabinPanel>(FindObjectsSortMode.None).First(p=>p.index==0);

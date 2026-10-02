@@ -15,7 +15,7 @@ namespace ElevatorGame
             voices=new AudioSource[16];
             for(int i=0;i<voices.Length;i++)
             {var go=new GameObject("Spatial voice "+i);go.transform.SetParent(transform);voices[i]=go.AddComponent<AudioSource>();voices[i].spatialBlend=.7f;voices[i].minDistance=2;voices[i].maxDistance=35;voices[i].rolloffMode=AudioRolloffMode.Linear;}
-            foreach(var cue in new[]{"ding","door","doorClose","grab","release","jump","step","fall","bump","impact","wind","roar","rumble","chicken","fish","splash","tank","ufo","piano","drop","out","win","warning","throw","bite","whoosh","slam","dinoRun","runner","click","motor","cart","cartCrash","swing","heavySwing","hit","pistol","shotgun","rocket","launcher","zap","blower","grappler","explosion"})
+            foreach(var cue in new[]{"ding","door","doorClose","grab","release","jump","step","fall","bump","impact","wind","roar","rumble","chicken","fish","splash","tank","ufo","piano","hwacha","drop","out","win","warning","throw","bite","whoosh","slam","dinoRun","runner","click","motor","cart","cartCrash","swing","heavySwing","hit","pistol","shotgun","rocket","launcher","zap","blower","grappler","explosion"})
                 clips[cue]=Synthesize(cue);
             motor=gameObject.AddComponent<AudioSource>();motor.clip=clips["motor"];motor.loop=true;motor.volume=0;motor.Play();
             air=gameObject.AddComponent<AudioSource>();air.clip=clips["wind"];air.loop=true;air.volume=0;air.Play();
@@ -61,6 +61,7 @@ namespace ElevatorGame
                 {
                     case "pistol":v=noise*Mathf.Exp(-t*55)*.65f+Mathf.Sin(2*Mathf.PI*130*t)*Mathf.Exp(-t*27)*.5f;break;
                     case "shotgun":v=noise*Mathf.Exp(-t*30)*.65f+filtered*Mathf.Exp(-t*9)+Mathf.Sin(2*Mathf.PI*62*t)*Mathf.Exp(-t*12)*.5f;break;
+                    case "hwacha":v=noise*Mathf.Exp(-t*36)*.45f+Mathf.Sin(2*Mathf.PI*130*t)*Mathf.Exp(-t*15)*.3f;break;
                     case "explosion":v=(filtered*1.5f+Mathf.Sin(2*Mathf.PI*42*t)*.55f)*Mathf.Exp(-t*5)*Mathf.Min(t*150,1);break;
                     case "hit":phase+=2*Mathf.PI*Mathf.Lerp(250,65,n)/rate;v=(Mathf.Sin(phase)*.65f+noise*Mathf.Exp(-t*70)*.3f)*env;break;
                     case "swing":case "heavySwing":v=(filtered*1.4f+Mathf.Sin(2*Mathf.PI*90*t)*.1f)*Mathf.Pow(Mathf.Sin(n*Mathf.PI),2);break;

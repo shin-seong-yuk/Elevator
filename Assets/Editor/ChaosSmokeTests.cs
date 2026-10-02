@@ -28,10 +28,10 @@ namespace ElevatorGame.Editor
             Check(r.Stage.Value==ElevatorStage.Moving&&r.Remaining>11,"Travel gives twelve seconds for weapon combat");
             Check(UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==1,"One weapon spawned on floor one");
             var initial=UnityEngine.Object.FindFirstObjectByType<WeaponPickup>();
-            for(int i=0;i<3;i++){r.NextFloor();yield return .1;}
-            Check(initial&&UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==4,"Weapon persists for four floors with one new weapon per floor");
+            for(int i=0;i<2;i++){r.NextFloor();yield return .1;}
+            Check(initial&&UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==3,"Weapon persists for three floors with one new weapon per floor");
             r.NextFloor();yield return .1;
-            Check(!initial&&UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==4,"Oldest weapon expires on fifth floor");
+            Check(!initial&&UnityEngine.Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==3,"Oldest weapon expires on fourth floor");
             var weapons=r.GetComponent<WeaponSystem>();weapons.ResetAll();yield return .1;
             foreach(var p in players)p.ResetForRound(new Vector3(10+p.Slot.Value*2,1,10));
             human.ResetForRound(new Vector3(0,1.15f,0));victim.ResetForRound(new Vector3(0,1.15f,1.8f));
@@ -49,6 +49,17 @@ namespace ElevatorGame.Editor
             Check(WeaponSystem.Held(human)==disarmItem,"Moderate knockback keeps the weapon");
             human.Knock(Vector3.right*(PlayerController.WeaponDisarmSpeed+2),.05f);
             Check(WeaponSystem.Held(human)==null&&disarmItem.Holder.Value<0&&!disarmItem.Prop.Body.isKinematic,"Heavy knockback drops a physical weapon");
+            weapons.ResetAll();human.ResetForRound(new Vector3(0,1.15f,0));victim.ResetForRound(new Vector3(0,1.15f,2.05f));
+            var thrown=r.events.SpawnProp(9,new Vector3(0,1.2f,.3f),Vector3.zero,true).GetComponent<WeaponPickup>();
+            var carried=r.events.SpawnProp(9,new Vector3(0,1.2f,2.05f),Vector3.zero,true).GetComponent<WeaponPickup>();
+            thrown.Holder.Value=human.Slot.Value;carried.Holder.Value=victim.Slot.Value;
+            human.SetMoveInput(Vector2.zero,0,false,false);yield return .08;
+            // The previous impact may still have a queued physics force after teleportation.
+            human.ResetForRound(new Vector3(0,1.15f,0));victim.ResetForRound(new Vector3(0,1.15f,2.05f));
+            thrown.Holder.Value=human.Slot.Value;carried.Holder.Value=victim.Slot.Value;
+            human.Body.linearVelocity=Vector3.zero;human.Body.angularVelocity=Vector3.zero;
+            WeaponSystem.Drop(human,true);yield return .32;
+            Check(WeaponSystem.Held(victim)==null&&carried.Holder.Value<0,"F-thrown weapon disarms the hit passenger");
             weapons.ResetAll();human.ResetForRound(new Vector3(0,1.15f,0));yield return .2;
             human.enabled=false;human.Grab.ResetGrip();var anchor=UnityEngine.Object.FindObjectsByType<GrabAnchor>(FindObjectsSortMode.None).First(a=>a.name=="Side handrail").GetComponent<Collider>();
             human.Grab.Attach(0,anchor,anchor.ClosestPoint(human.Grab.leftHand.position));human.Grab.ApplyImpact(300);

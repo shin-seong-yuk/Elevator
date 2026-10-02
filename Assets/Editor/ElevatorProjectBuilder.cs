@@ -26,7 +26,7 @@ namespace ElevatorGame.Editor
             SetLayers();
             InitializePalette();
             var player=BuildPlayer();
-            var props=new NetworkProp[16];
+            var props=new NetworkProp[18];
             for(int i=0;i<props.Length;i++)props[i]=BuildProp(i);
             var definitions=BuildEvents();
             var previous=EditorSceneManager.GetActiveScene();
@@ -172,7 +172,7 @@ namespace ElevatorGame.Editor
         }
         static NetworkProp BuildProp(int kind)
         {
-            string[] names={"BowlingBall","ShoppingCart","Dinosaur","Gorilla","GiantChicken","GiantHand","FloodSurface","Crate","LatePassenger","Weapon","Projectile","FlyingFish","Tank","TankShell","Ufo","GrandPiano"};
+            string[] names={"BowlingBall","ShoppingCart","Dinosaur","Gorilla","GiantChicken","GiantHand","FloodSurface","Crate","LatePassenger","Weapon","Projectile","FlyingFish","Tank","TankShell","Ufo","GrandPiano","Hwacha","HwachaArrow"};
             var root=new GameObject(names[kind]);root.layer=10;var t=root.transform;
             Transform tail=null,head=null,jaw=null,leftLeg=null,rightLeg=null,fishLeftFin=null,fishRightFin=null,saucerRing=null;
             Renderer beamRenderer=null;
@@ -306,12 +306,37 @@ namespace ElevatorGame.Editor
                     for(int side=-1;side<=1;side+=2)for(int end=-1;end<=1;end+=2)
                         Cube("Piano leg",t,new Vector3(side*.84f,-.78f,end*.4f),new Vector3(.18f,.65f,.18f),gold,true,10);
                     break;
+                case 16:
+                    var hwachaWood=Mat("HwachaWood",new Color(.36f,.19f,.08f));
+                    Cube("Wheeled wooden carriage",t,Vector3.zero,new Vector3(2.5f,.3f,2.2f),hwachaWood,true,10);
+                    for(int side=-1;side<=1;side+=2)
+                    {
+                        Cube("Carriage rail",t,new Vector3(side*1.05f,.25f,0),new Vector3(.15f,.35f,2.35f),gold,false,10);
+                        for(int axle=-1;axle<=1;axle+=2)
+                            Shape("Spoked wheel",PrimitiveType.Cylinder,t,new Vector3(side*1.35f,-.45f,axle*.72f),new Vector3(.58f,.08f,.58f),dark,false,10).transform.localRotation=Quaternion.Euler(0,0,90);
+                    }
+                    Cube("Arrow rack",t,new Vector3(0,.92f,-.28f),new Vector3(2.35f,1.3f,.38f),hwachaWood,true,10);
+                    for(int row=0;row<5;row++)for(int col=0;col<10;col++)
+                    {
+                        float x=(col-4.5f)*.21f,y=.48f+row*.18f;
+                        Shape("Loaded arrow socket",PrimitiveType.Cylinder,t,new Vector3(x,y,-.52f),new Vector3(.068f,.18f,.068f),gold,false,10).transform.localRotation=Quaternion.Euler(90,0,0);
+                    }
+                    Cube("Front shield",t,new Vector3(0,.42f,-1.08f),new Vector3(2.55f,.65f,.14f),hwachaWood,true,10);
+                    break;
+                case 17:
+                    Shape("Arrow shaft",PrimitiveType.Cylinder,t,Vector3.zero,new Vector3(.045f,.36f,.045f),Mat("ArrowWood",new Color(.45f,.28f,.11f)),false,10).transform.localRotation=Quaternion.Euler(90,0,0);
+                    Shape("Iron arrowhead",PrimitiveType.Sphere,t,new Vector3(0,0,.43f),new Vector3(.13f,.13f,.25f),dark,false,10);
+                    for(int side=-1;side<=1;side+=2)
+                        Cube("Fletching",t,new Vector3(side*.075f,0,-.3f),new Vector3(.11f,.025f,.2f),coral,false,10);
+                    var arrowCollider=root.AddComponent<BoxCollider>();arrowCollider.size=new Vector3(.13f,.13f,.9f);
+                    break;
             }
             if(kind==9){var collider=root.AddComponent<BoxCollider>();collider.size=new Vector3(.28f,.3f,.65f);root.AddComponent<WeaponPickup>().visualMaterial=gold;}
             if(kind==10){Shape("Projectile shell",PrimitiveType.Sphere,t,Vector3.zero,Vector3.one*.25f,coral,true,10);root.AddComponent<WeaponProjectile>();}
-            var rb=Rigid(root,kind==15?175:kind==12?240:kind==11?13:kind>=9?8:kind==0?180:kind==1?45:kind==3?100:kind==4?50:kind==8?85:70);rb.angularDamping=kind==0?.08f:2;
+            var rb=Rigid(root,kind==16?220:kind==17?.35f:kind==15?175:kind==12?240:kind==11?13:kind>=9?8:kind==0?180:kind==1?45:kind==3?100:kind==4?50:kind==8?85:70);rb.angularDamping=kind==0?.08f:2;
             if(kind==8)rb.centerOfMass=new Vector3(0,-.55f,0);
             Network(root);var prop=root.AddComponent<NetworkProp>();prop.impactBoost=kind==15?1.5f:kind==13?1.1f:kind==12?1.1f:kind==11?.75f:kind==0?1.2f:kind==1?1:kind==9?.8f:0;
+            if(kind==17)root.AddComponent<HwachaArrow>();
             if(kind==11){var animator=root.AddComponent<FishAnimator>();animator.tail=tail;animator.leftFin=fishLeftFin;animator.rightFin=fishRightFin;}
             if(kind==14){var animator=root.AddComponent<SaucerAnimator>();animator.lightRing=saucerRing;animator.beam=beamRenderer;}
             if(kind==2||kind==3||kind==4||kind==8)
@@ -321,9 +346,9 @@ namespace ElevatorGame.Editor
         }
         static FloorEventDefinition[] BuildEvents()
         {
-            Type[] types={typeof(WindEvent),typeof(BowlingBallEvent),typeof(DinosaurEvent),typeof(ShoppingCartEvent),typeof(GorillaEvent),typeof(ChickenEvent),typeof(GiantHandEvent),typeof(FloodEvent),typeof(VacuumEvent),typeof(EarthquakeEvent),typeof(EmptyFloorEvent),typeof(FakeEmptyEvent),typeof(StrangerEvent),typeof(FlyingFishEvent),typeof(TankEvent),typeof(UfoEvent),typeof(GrandPianoEvent)};
-            string[] titles={"HOLD ON TIGHT","STRIKE!","JURASSIC SERVICE","CART TRAFFIC","UNINVITED GUEST","POULTRY IN MOTION","HELPING HAND?","HIGH WATER","NO ATMOSPHERE","SHAKEN, NOT STIRRED","NOTHING TO SEE","NOTHING TO SEE","RUNNING LATE","FISH OUT OF WATER","ARMORED ROOM SERVICE","UNIDENTIFIED FLOOR OBJECT","GRAND FINALE"};
-            string[] hints={"Grab the rail. Gusts come in waves.","Watch the rebound.","Keep clear of the head. Save anyone bitten.","Carts can stay between floors.","Grab your friend before the throw.","Do not trust the chicken.","Break its grip by holding the cabin.","Grab high and keep your feet down.","Everything is being pulled outside.","Hold the rails.","Enjoy the silence.","Enjoy the silence.","Make room for the late passenger.","Ten fish flop, then leap into the lift.","Dodge the cannon and its blast.","Do not stand under the tractor beam.","Mind the falling piano."};
+            Type[] types={typeof(WindEvent),typeof(BowlingBallEvent),typeof(DinosaurEvent),typeof(ShoppingCartEvent),typeof(GorillaEvent),typeof(ChickenEvent),typeof(GiantHandEvent),typeof(FloodEvent),typeof(VacuumEvent),typeof(EarthquakeEvent),typeof(EmptyFloorEvent),typeof(FakeEmptyEvent),typeof(StrangerEvent),typeof(FlyingFishEvent),typeof(TankEvent),typeof(UfoEvent),typeof(GrandPianoEvent),typeof(HwachaEvent)};
+            string[] titles={"HOLD ON TIGHT","STRIKE!","JURASSIC SERVICE","CART TRAFFIC","UNINVITED GUEST","POULTRY IN MOTION","HELPING HAND?","HIGH WATER","NO ATMOSPHERE","SHAKEN, NOT STIRRED","NOTHING TO SEE","NOTHING TO SEE","RUNNING LATE","FISH OUT OF WATER","ARMORED ROOM SERVICE","UNIDENTIFIED FLOOR OBJECT","GRAND FINALE","JOSEON FIREWORKS"};
+            string[] hints={"Grab the rail. Gusts come in waves.","Watch the rebound.","Dodge the tail. It sweeps every two seconds.","Carts can stay between floors.","Grab your friend before the throw.","Do not trust the chicken.","Break its grip by holding the cabin.","Grab high and keep your feet down.","Everything is being pulled outside.","Hold the rails.","Enjoy the silence.","Enjoy the silence.","Make room for the late passenger.","Ten fish flop, then leap into the lift.","Dodge the cannon and its blast.","Do not stand under the tractor beam.","Mind the falling piano.","Fifty arrows fire after two seconds. Keep moving."};
             var definitions=new FloorEventDefinition[types.Length];
             for(int i=0;i<types.Length;i++)
             {
@@ -339,11 +364,36 @@ namespace ElevatorGame.Editor
             var d=AssetDatabase.LoadAssetAtPath<FloorEventDefinition>(path);
             if(!d){d=ScriptableObject.CreateInstance<FloorEventDefinition>();AssetDatabase.CreateAsset(d,path);}
             d.kind=(EventKind)i;d.eventName=title;d.hint=hint;
-            d.weight=i==10?.65f:i==14?.72f:i==15?.75f:i==16?.82f:1;
-            d.duration=i==10?5:i==2?22:14;
-            d.minimumFloor=i==14?6:i==15?8:i==16?5:i==13?3:(i==4||i==6||i==8)?4:1;
+            d.weight=i==10?.65f:i==14?.72f:i==15?.75f:i==16?.82f:i==17?.7f:1;
+            d.duration=i==10?5:i==2?22:i==17?12:14;
+            d.minimumFloor=i==14?6:i==15?8:i==16?5:i==17?6:i==13?3:(i==4||i==6||i==8)?4:1;
             d.maximumFloor=999;d.difficulty=1;d.canCombine=i!=10&&i!=11;d.persistent=i==3;
             d.prefab=prefab.GetComponent<FloorEvent>();EditorUtility.SetDirty(d);return d;
+        }
+        [MenuItem("Elevator/Install Hwacha Floor")]
+        public static void InstallHwachaFloor()
+        {
+            if(EditorApplication.isPlaying)throw new InvalidOperationException("Exit Play Mode before installing the Hwacha floor.");
+            if(!string.Equals(Path.GetFullPath(Application.dataPath),Path.GetFullPath("Assets"),StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Open the Elevator project first: "+Application.dataPath);
+            var scene=EditorSceneManager.GetActiveScene();
+            if(scene.path!=Root+"/Scenes/Elevator.unity")throw new InvalidOperationException("Open the Elevator scene first.");
+            var round=UnityEngine.Object.FindFirstObjectByType<RoundManager>();
+            var session=UnityEngine.Object.FindFirstObjectByType<NetworkGameManager>();
+            if(!round||!session||round.events.propPrefabs.Length<16||round.events.definitions.Length<17)
+                throw new InvalidOperationException("Playable Elevator scene is missing existing events or prefabs.");
+            InitializePalette();
+            var props=new NetworkProp[18];Array.Copy(round.events.propPrefabs,props,16);
+            props[16]=BuildProp(16);props[17]=BuildProp(17);
+            var definitions=new FloorEventDefinition[18];Array.Copy(round.events.definitions,definitions,17);
+            definitions[17]=CreateEventDefinition(17,typeof(HwachaEvent),"JOSEON FIREWORKS","Fifty arrows fire after two seconds. Keep moving.");
+            definitions[2].hint="Dodge the tail. It sweeps every two seconds.";EditorUtility.SetDirty(definitions[2]);
+            round.events.propPrefabs=props;round.events.definitions=definitions;
+            session.networkPrefabs=props.Select(p=>p.GetComponent<NetworkObject>()).Concat(new[]{session.playerPrefab.GetComponent<NetworkObject>()}).ToArray();
+            EditorUtility.SetDirty(round.events);EditorUtility.SetDirty(session);
+            EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();AssetDatabase.Refresh();
+            Debug.Log("ELEVATOR_HWACHA_INSTALLED: 50-arrow floor, network prefabs and AI hazard are wired.");
         }
         [MenuItem("Elevator/Install New Floor Events")]
         public static void InstallNewFloorEvents()

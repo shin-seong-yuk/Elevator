@@ -21,6 +21,8 @@ namespace ElevatorGame
         {
             float speed=c.relativeVelocity.magnitude;
             if(speed>3)AudioManager.Instance?.PlayAt("impact",transform.position,.45f);
+            var thrownWeapon=GetComponent<WeaponPickup>();
+            if(thrownWeapon&&thrownWeapon.ActiveThrow)return;
             if(!IsAuthority||impactBoost<=0||speed<4||Time.time<nextImpact)return;
             var actor=c.collider.GetComponentInParent<PlayerController>();
             if(!actor||!actor.Alive.Value)return;
