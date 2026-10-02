@@ -57,13 +57,18 @@ namespace ElevatorGame.Editor
             yield return .6;
             r.events.Force(EventKind.BowlingBall);r.events.Prepare(1);r.events.Begin();
             yield return .63;
+            var bowling=UnityEngine.Object.FindFirstObjectByType<BowlingBallEvent>();
+            Check(bowling&&bowling.BallsLaunched==1,"Bowling wave starts with one visible ball");
             var ball=UnityEngine.Object.FindObjectsByType<NetworkProp>(FindObjectsSortMode.None).First(p=>p.name.StartsWith("BowlingBall"));
             Check(ball.Body.linearVelocity.magnitude>18,"Ball approaches above 18 m/s from distant corridor");
             float arrival=(ball.Body.position.z-1.2f)/-ball.Body.linearVelocity.z; players[0].ResetForRound(new Vector3(Mathf.Clamp(ball.Body.position.x+ball.Body.linearVelocity.x*arrival,-2.4f,2.4f),1.15f,1.2f));
             bool launched=false;
             drive=()=>{if(players.Any(p=>p.Body.linearVelocity.magnitude>6||p.Body.linearVelocity.y>2.5f))launched=true;};
             yield return 3.2;
+            Check(bowling.BallsLaunched==3,"Bowling balls arrive one after another");
+            yield return 3.2;
             drive=null;Check(launched,"Ball contact launches physical passengers");
+            Check(bowling.BallsLaunched==5,"Exactly five bowling balls launch during the floor");
             r.events.Cleanup(true);foreach(var p in players)p.ResetForRound(RoundManager.SpawnPoint(p.Slot.Value));
             yield return .3;
             r.events.Force(EventKind.ShoppingCart);r.events.Prepare(1);r.events.Begin();
