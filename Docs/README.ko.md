@@ -74,7 +74,7 @@ Assets/Elevator/ScriptableObjects에 이벤트별 가중치·시간·난이도·
 - Elevator / Run Gameplay Smoke Tests: 멀티플레이 호스트 및 이벤트 회귀 검사
 - Elevator / Run Single Player Tests: 네트워크 없는 싱글·조작·유연한 잡기·AI·관전·승패 검사
 - Elevator / Test Ball And Cart Impacts: 8인 상태의 볼링 속도·충격, 카트 연속 진입·반동·충돌 검사
-- Elevator / Build Windows Player: Builds/Windows/Elevator.exe 생성
+- Elevator / Build Windows Player: Builds/Windows/Elevator.exe 릴리스 빌드 생성. 배포할 때는 Windows 폴더 전체를 함께 전달합니다.
 - TestResults/에 실제 테스트 결과와 두 프로세스의 네트워크 상태 기록 저장
 
 F1 메뉴에서 이벤트 강제, 조합, 라운드 재시작, AI 추가/제거/난이도 변경, AI 강제 잡기/넘어짐을 실행할 수 있습니다.
@@ -121,7 +121,7 @@ WAN 지연 예측, 여러 Steam 계정으로 인터넷 연결·방장 이전 검
 - 재장전은 없으며, 빈 무기는 F로 던지고 다른 무기를 찾습니다. 무기 UI에 남은 수량과 EMPTY를 표시합니다. 다시 줍기/다른 사람에게 전달/층 이동/방장 이전으로 탄약이 충전되지 않습니다.
 - 더미도 동일한 탄약 제한을 사용하며 빈 무기를 버리고, 바닥의 빈 무기는 새 공격용 무기로 선택하지 않습니다.
 - 탄약 감소와 발사 판정은 서버 권한입니다. 탄약이 소진된 공격이나 쿨다운 중 입력은 발사 효과/피해/탄약 추가 소모를 발생시키지 않습니다.
-- Steam 호환 빌드 태그를 elevator-steam-4로 변경했습니다. 친구에게도 Windows 폴더 전체를 최신 버전으로 전달하세요.
+- Steam 호환 빌드 태그는 elevator-steam-5입니다. 친구에게도 Windows 폴더 전체를 최신 버전으로 전달하세요.
 - 문 위 헤더와 천장·옆벽의 겹친 앞면, 뒤 난간과 옆 난간/장식의 교차 부분을 수정했습니다. 씬과 Cabin 프리팹에 함께 적용했고, PC 그림자 바이어스도 조정했습니다.
 - 검사 메뉴: Elevator / Test Weapon Balance. 결과: TestResults/weapon-balance.txt.
 

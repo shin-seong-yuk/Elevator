@@ -593,9 +593,10 @@ namespace ElevatorGame.Editor
             Directory.CreateDirectory("Builds/Windows");
             var steamConfig=JsonUtility.FromJson<SteamConfiguration>(Resources.Load<TextAsset>("SteamConfig").text);
             File.WriteAllText("Builds/Windows/steam_appid.txt",steamConfig.appId.ToString());
-            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions {scenes=new[]{Root+"/Scenes/Elevator.unity"},locationPathName="Builds/Windows/Elevator.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
+            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions {scenes=new[]{Root+"/Scenes/Elevator.unity"},locationPathName="Builds/Windows/Elevator.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.None});
             if(report.summary.result==UnityEditor.Build.Reporting.BuildResult.Succeeded){var config=JsonUtility.FromJson<SteamConfiguration>(Resources.Load<TextAsset>("SteamConfig").text);File.WriteAllText("Builds/Windows/steam_appid.txt",config.appId.ToString());}
             Debug.Log("ELEVATOR_PLAYER_BUILD: "+report.summary.result);
+            if(report.summary.result!=UnityEditor.Build.Reporting.BuildResult.Succeeded)throw new Exception("Windows player build failed: "+report.summary.result);
         }
     }
 }
